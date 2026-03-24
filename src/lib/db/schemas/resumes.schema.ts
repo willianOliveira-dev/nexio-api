@@ -9,7 +9,6 @@ import {
     varchar,
 } from 'drizzle-orm/pg-core';
 import { user } from './user.schema.js';
-import { type } from 'os';
 
 export const resumeStatusEnum = pgEnum('resume_status', [
     'pending',
