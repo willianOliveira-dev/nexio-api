@@ -21,22 +21,23 @@ export function swaggerRoutes(app: OpenAPIHono) {
 				description: 'Production',
 			},
 		],
-	}),
-		app.get(
-			'/docs',
-			Scalar({
-				pageTitle: 'Nexio API Documentação',
-				theme: 'bluePlanet',
-				sources: [
-					{
-						title: 'Nexio API',
-						url: '/doc',
-					},
-					{
-						title: 'Auth API',
-						url: '/api/auth/open-api/generate-schema',
-					},
-				],
-			}),
-		);
+	});
+
+	app.get(
+		'/docs',
+		Scalar({
+			pageTitle: 'Nexio API Documentação',
+			theme: 'bluePlanet',
+			sources: [
+				{
+					title: 'Nexio API',
+					url: '/doc',
+				},
+				{
+					title: 'Auth API',
+					url: '/api/auth/open-api/generate-schema',
+				},
+			],
+		}),
+	);
 }

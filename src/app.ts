@@ -4,11 +4,13 @@ import { logger } from 'hono/logger';
 import { secureHeaders } from 'hono/secure-headers';
 import { timing } from 'hono/timing';
 import { env } from './config/env.js';
+import { errorHandler } from './middlewares/errors/error-handler.middleware.js';
 import { regiterRoutes } from './routes/root.routes.js';
 
 export function boostrapApp() {
 	const app = new OpenAPIHono();
 
+	app.onError(errorHandler);
 	app.use('*', timing());
 	app.use('*', logger());
 	app.use('*', secureHeaders());
