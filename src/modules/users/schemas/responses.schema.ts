@@ -1,19 +1,15 @@
-import { z } from 'zod';
+import { z } from '@hono/zod-openapi';
 import { experienceLevels, preferredLanguages, workModels, writingTones } from './users.enums.js';
 
 export const userResponseSchema = z.object({
 	id: z.string().uuid(),
 	name: z.string(),
 	email: z.string().email(),
-	emailVerified: z.boolean(),
 	image: z.string().nullable(),
-	createdAt: z.date(),
-	updatedAt: z.date(),
+	createdAt: z.string().datetime(),
 });
 
 export const profileResponseSchema = z.object({
-	id: z.string().uuid(),
-	userId: z.string().uuid(),
 	currentRole: z.string().nullable(),
 	targetRole: z.string().nullable(),
 	experienceLevel: z.enum(experienceLevels).nullable(),
@@ -28,15 +24,12 @@ export const profileResponseSchema = z.object({
 		)
 		.nullable(),
 	preferredLanguage: z.enum(preferredLanguages),
-	targetCountry: z.string().nullable(),
 	workModel: z.enum(workModels).nullable(),
 	willingToRelocate: z.boolean().nullable(),
 	writingTone: z.enum(writingTones).nullable(),
 	careerGoals: z.string().nullable(),
 	aiCreditsUsed: z.number().int(),
 	aiCreditsLimit: z.number().int(),
-	createdAt: z.date(),
-	updatedAt: z.date(),
 });
 
 export const getMeResponseSchema = z.object({

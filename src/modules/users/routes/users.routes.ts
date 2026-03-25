@@ -25,7 +25,7 @@ usersRoutes.openapi(
 		operationId: 'getMe',
 		tags: ['Users'],
 		summary: 'Obtém o usuário autenticado e seu perfil',
-		middleware: [authenticateMiddleware] as const,
+		middleware: [authenticateMiddleware],
 		responses: {
 			200: {
 				description: 'Dados do usuário e perfil',
@@ -49,7 +49,7 @@ usersRoutes.openapi(
 		operationId: 'updateProfile',
 		tags: ['Users'],
 		summary: 'Atualiza o perfil do usuário autenticado',
-		middleware: [authenticateMiddleware] as const,
+		middleware: [authenticateMiddleware],
 		request: {
 			body: {
 				required: true,
@@ -81,7 +81,7 @@ usersRoutes.openapi(
 		operationId: 'getCredits',
 		tags: ['Users'],
 		summary: 'Retorna o saldo de créditos de IA do usuário',
-		middleware: [authenticateMiddleware] as const,
+		middleware: [authenticateMiddleware],
 		responses: {
 			200: {
 				description: 'Saldo de créditos disponíveis para uso de IA',
