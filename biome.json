@@ -1,13 +1,13 @@
 {
     "$schema": "https://biomejs.dev/schemas/2.4.8/schema.json",
-	"organizeImports": { "enabled": true },
     "vcs": {
         "enabled": true,
         "clientKind": "git",
         "useIgnoreFile": true
     },
     "files": {
-        "ignoreUnknown": false
+        "ignoreUnknown": true,
+        "includes": ["**", "!node_modules", "!dist", "!build"]
     },
     "formatter": {
         "enabled": true,

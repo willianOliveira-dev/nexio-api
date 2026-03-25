@@ -1,12 +1,28 @@
-import { Hono } from 'hono';
-import { logger } from 'hono/logger';
+import { OpenAPIHono } from '@hono/zod-openapi';
 import { cors } from 'hono/cors';
+import { logger } from 'hono/logger';
+import { secureHeaders } from 'hono/secure-headers';
+import { timing } from 'hono/timing';
+import { env } from './config/env.js';
+import { regiterRoutes } from './routes/root.routes.js';
 
-const app = new Hono();
+export function boostrapApp() {
+	const app = new OpenAPIHono();
 
-app.use('*', logger());
-app.use('*', cors());
+	app.use('*', timing());
+	app.use('*', logger());
+	app.use('*', secureHeaders());
+	app.use(
+		'*',
+		cors({
+			origin: env.ALLOWED_ORIGINS,
+			allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+			allowHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+			credentials: true,
+		}),
+	);
 
-app.get('/health', (c) => c.json({ status: 'ok' }));
+	regiterRoutes(app);
 
-export { app };
+	return app;
+}
