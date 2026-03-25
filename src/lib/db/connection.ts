@@ -1,8 +1,8 @@
 import { neonConfig, Pool } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-serverless';
-import { env } from '../../config/env.js';
 import ws from 'ws';
 import * as schema from '@/lib/db/schemas/index.schema.js';
+import { env } from '../../config/env.js';
 
 neonConfig.webSocketConstructor = ws;
 

@@ -27,6 +27,19 @@ export const auth = betterAuth({
 		provider: 'pg',
 		schema: schema,
 	}),
+	databaseHooks: {
+		user: {
+			create: {
+				after: async (user) => {
+					await db.insert(schema.userProfiles).values({
+						userId: user.id,
+						aiCreditsLimit: 5,
+						aiCreditsUsed: 0,
+					});
+				},
+			},
+		},
+	},
 	session: {
 		expiresIn: 60 * 60 * 24 * 7,
 	},

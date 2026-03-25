@@ -2,8 +2,10 @@ import { createMiddleware } from 'hono/factory';
 import { auth } from '@/lib/auth/auth.lib.js';
 import { UnauthorizedError } from '@/shared/errors/app.error.js';
 
-type AuthVariables = {
-	session: Awaited<ReturnType<typeof auth.api.getSession>>;
+type Session = NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>;
+
+export type AuthVariables = {
+	session: Session;
 };
 
 export const authenticateMiddleware = createMiddleware<{

@@ -42,3 +42,8 @@ export class InternalServerError extends AppError {
 		super(m, 500, 'INTERNAL_SERVER_ERROR');
 	}
 }
+export class PaymentRequiredError extends AppError {
+	constructor(m = 'Pagamento obrigatório') {
+		super(m, 402, 'PAYMENT_REQUIRED');
+	}
+}
