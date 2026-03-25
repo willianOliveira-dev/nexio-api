@@ -5,8 +5,8 @@ import { swaggerRoutes } from '@/modules/swagger/routes/swagger.routes.js';
 import { usersRoutes } from '@/modules/users/routes/users.routes.js';
 
 export function regiterRoutes(app: OpenAPIHono) {
-	swaggerRoutes(app);
-	authRoutes(app);
-	healthRoutes(app);
+	app.route('/', authRoutes);
+	app.route('/', healthRoutes);
 	app.route('/', usersRoutes);
+	swaggerRoutes(app);
 }
