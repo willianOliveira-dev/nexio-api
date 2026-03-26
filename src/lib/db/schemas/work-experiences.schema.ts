@@ -17,3 +17,5 @@ export const workExperiences = pgTable('work_experiences', {
 });
 
 export type WorkExperiences = typeof workExperiences.$inferSelect;
+
+export type NewWorkExperience = typeof workExperiences.$inferInsert;

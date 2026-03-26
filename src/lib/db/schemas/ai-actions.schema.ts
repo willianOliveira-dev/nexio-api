@@ -50,3 +50,5 @@ export const aiActions = pgTable(
 );
 
 export type AiAction = typeof aiActions.$inferSelect;
+
+export type NewAiAction = typeof aiActions.$inferInsert;

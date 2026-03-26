@@ -28,3 +28,5 @@ export const resumeScores = pgTable('resume_scores', {
 });
 
 export type ResumeScores = typeof resumeScores.$inferSelect;
+
+export type NewResumeScore = typeof resumeScores.$inferInsert;

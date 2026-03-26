@@ -11,3 +11,5 @@ export const languages = pgTable('languages', {
 });
 
 export type Languages = typeof languages.$inferSelect;
+
+export type NewLanguage = typeof languages.$inferInsert;

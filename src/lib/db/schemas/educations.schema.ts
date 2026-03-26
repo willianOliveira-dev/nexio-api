@@ -15,3 +15,5 @@ export const educations = pgTable('educations', {
 });
 
 export type Educations = typeof educations.$inferSelect;
+
+export type NewEducation = typeof educations.$inferInsert;

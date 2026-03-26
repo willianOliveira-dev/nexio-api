@@ -11,3 +11,5 @@ export const skills = pgTable('skills', {
 });
 
 export type Skills = typeof skills.$inferSelect;
+
+export type NewSkill = typeof skills.$inferInsert;
