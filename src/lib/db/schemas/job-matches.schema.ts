@@ -41,3 +41,4 @@ export const jobMatches = pgTable(
 );
 
 export type JobMatches = typeof jobMatches.$inferSelect;
+export type NewJobMatch = typeof jobMatches.$inferInsert;
