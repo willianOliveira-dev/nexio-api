@@ -1,19 +1,25 @@
 import { and, count, desc, eq } from 'drizzle-orm';
 import { db } from '@/lib/db/connection.js';
 import type {
+	Certifications,
 	Educations,
 	Languages,
 	NewAiAction,
+	NewCertification,
 	NewEducation,
 	NewLanguage,
+	NewProject,
 	NewResume,
 	NewResumeScore,
 	NewSkill,
+	NewVolunteering,
 	NewWorkExperience,
+	Projects,
 	ResumeScores,
 	Resumes,
 	ResumeVersions,
 	Skills,
+	Volunteering,
 	WorkExperiences,
 } from '@/lib/db/schemas/index.schema.js';
 import * as schema from '@/lib/db/schemas/index.schema.js';
@@ -115,6 +121,21 @@ export class ResumesRepository {
 		if (items.length > 0) await db.insert(schema.languages).values(items);
 	}
 
+	async upsertProjects(resumeId: string, items: NewProject[]): Promise<void> {
+		await db.delete(schema.projects).where(eq(schema.projects.resumeId, resumeId));
+		if (items.length > 0) await db.insert(schema.projects).values(items);
+	}
+
+	async upsertCertifications(resumeId: string, items: NewCertification[]): Promise<void> {
+		await db.delete(schema.certifications).where(eq(schema.certifications.resumeId, resumeId));
+		if (items.length > 0) await db.insert(schema.certifications).values(items);
+	}
+
+	async upsertVolunteering(resumeId: string, items: NewVolunteering[]): Promise<void> {
+		await db.delete(schema.volunteering).where(eq(schema.volunteering.resumeId, resumeId));
+		if (items.length > 0) await db.insert(schema.volunteering).values(items);
+	}
+
 	async createAiAction(data: NewAiAction): Promise<void> {
 		await db.insert(schema.aiActions).values(data);
 	}
@@ -163,11 +184,14 @@ export class ResumesRepository {
 }
 
 export type {
+	Certifications,
 	Educations,
 	Languages,
+	Projects,
 	ResumeScores,
 	Resumes,
 	ResumeVersions,
 	Skills,
+	Volunteering,
 	WorkExperiences,
 };

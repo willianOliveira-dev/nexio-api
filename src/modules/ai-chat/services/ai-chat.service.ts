@@ -50,7 +50,7 @@ export class AiChatService {
 			if (!jobMatch) throw new NotFoundError('Job Match');
 		}
 
-		const title = 'Chat com Nexio AI - ' + resume.fileName;
+		const title = `Chat com Nexio AI - ${resume.fileName}`;
 
 		return this.aiChatRepository.createSession({
 			userId,

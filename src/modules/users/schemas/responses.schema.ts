@@ -10,6 +10,7 @@ export const userResponseSchema = z.object({
 });
 
 export const profileResponseSchema = z.object({
+	plan: z.enum(['free', 'pro', 'enterprise']),
 	currentRole: z.string().nullable(),
 	targetRole: z.string().nullable(),
 	experienceLevel: z.enum(experienceLevels).nullable(),
@@ -29,7 +30,6 @@ export const profileResponseSchema = z.object({
 	writingTone: z.enum(writingTones).nullable(),
 	careerGoals: z.string().nullable(),
 	aiCreditsUsed: z.number().int(),
-	aiCreditsLimit: z.number().int(),
 });
 
 export const getMeResponseSchema = z.object({

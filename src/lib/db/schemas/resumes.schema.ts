@@ -63,7 +63,7 @@ export type ResumeContent = {
 	projects?: {
 		name: string;
 		description: string;
-		technologies?: string[];
+		keywords?: string[];
 		url?: string;
 	}[];
 	volunteering?: {

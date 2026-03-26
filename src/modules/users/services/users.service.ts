@@ -2,6 +2,7 @@ import type { z } from '@hono/zod-openapi';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc.js';
 import type { UserProfiles } from '@/lib/db/schemas/user-profiles.schema.js';
+import { getAiCreditsPerMonth } from '@/shared/config/plan-limits.js';
 import { NotFoundError, PaymentRequiredError } from '@/shared/errors/app.error.js';
 import type { UsersRepository } from '../repositories/users.repository.js';
 import type { getMeResponseSchema, profileResponseSchema } from '../schemas/responses.schema.js';
@@ -52,10 +53,12 @@ export class UsersService {
 
 		const resetAt = dayjs.utc().add(1, 'month').startOf('month').toISOString();
 
+		const limit = getAiCreditsPerMonth(profile.plan);
+
 		return {
 			used: profile.aiCreditsUsed,
-			limit: profile.aiCreditsLimit,
-			remaining: profile.aiCreditsLimit - profile.aiCreditsUsed,
+			limit,
+			remaining: limit - profile.aiCreditsUsed,
 			resetAt,
 		};
 	}
@@ -70,6 +73,7 @@ export class UsersService {
 
 	private mapProfile(profile: UserProfiles): ProfileResult {
 		return {
+			plan: profile.plan,
 			currentRole: profile.currentRole,
 			targetRole: profile.targetRole,
 			experienceLevel: profile.experienceLevel,
@@ -82,7 +86,6 @@ export class UsersService {
 			writingTone: profile.writingTone,
 			careerGoals: profile.careerGoals,
 			aiCreditsUsed: profile.aiCreditsUsed,
-			aiCreditsLimit: profile.aiCreditsLimit,
 		};
 	}
 }

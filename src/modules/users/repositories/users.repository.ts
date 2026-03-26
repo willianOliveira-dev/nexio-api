@@ -3,6 +3,7 @@ import { db } from '@/lib/db/connection.js';
 import * as schema from '@/lib/db/schemas/index.schema.js';
 import type { User } from '@/lib/db/schemas/user.schema.js';
 import type { UserProfiles } from '@/lib/db/schemas/user-profiles.schema.js';
+import { getAiCreditsPerMonth } from '@/shared/config/plan-limits.js';
 import type { UpdateProfileDTO } from '../schemas/update-profile.dto.js';
 
 export class UsersRepository {
@@ -47,6 +48,7 @@ export class UsersRepository {
 	async getCreditsRemaining(userId: string): Promise<number> {
 		const profile = await this.findProfileByUserId(userId);
 		if (!profile) return 0;
-		return profile.aiCreditsLimit - profile.aiCreditsUsed;
+		const limit = getAiCreditsPerMonth(profile.plan);
+		return limit - profile.aiCreditsUsed;
 	}
 }

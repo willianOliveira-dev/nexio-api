@@ -96,7 +96,7 @@ OUTPUT SCHEMA (TypeScript for reference)
   "projects"?: Array<{
     "name": string,
     "description": string,
-    "technologies"?: string[],
+    "keywords"?: string[],
     "url"?: string
   }>
 }

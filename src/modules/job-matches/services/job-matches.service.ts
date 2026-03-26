@@ -1,7 +1,13 @@
 import { groq } from '@/lib/ai/groq.client.js';
 import type { ResumesRepository } from '@/modules/resumes/repositories/resumes.repository.js';
 import type { UsersRepository } from '@/modules/users/repositories/users.repository.js';
-import { BadRequestError, NotFoundError, PaymentRequiredError } from '@/shared/errors/app.error.js';
+import { canUseJobMatch } from '@/shared/config/plan-limits.js';
+import {
+	BadRequestError,
+	ForbiddenError,
+	NotFoundError,
+	PaymentRequiredError,
+} from '@/shared/errors/app.error.js';
 import {
 	buildJobMatchUserPrompt,
 	JOB_MATCH_SYSTEM_PROMPT,
@@ -25,6 +31,11 @@ export class JobMatchesService {
 	) {}
 
 	async analyzeMatch(userId: string, data: CreateJobMatchDTO): Promise<JobMatches> {
+		const profile = await this.usersRepository.findProfileByUserId(userId);
+		if (!canUseJobMatch(profile?.plan ?? 'free')) {
+			throw new ForbiddenError('Job Match requer plano Pro ou superior.');
+		}
+
 		const resume = await this.resumesRepository.findById(data.resumeId, userId);
 		if (!resume) throw new NotFoundError('Resume');
 

@@ -49,3 +49,5 @@ export const exports = pgTable(
 );
 
 export type Exports = typeof exports.$inferSelect;
+
+export type NewExport = typeof exports.$inferInsert;

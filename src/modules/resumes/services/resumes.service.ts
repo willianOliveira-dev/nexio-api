@@ -5,6 +5,7 @@ import { PDFParse } from 'pdf-parse';
 import { getBoss, RESUME_ANALYZE_JOB } from '@/lib/queue/pg-boss.client.js';
 import { deleteFromR2, getPresignedUrl, uploadToR2 } from '@/lib/r2/r2.client.js';
 import type { UsersRepository } from '@/modules/users/repositories/users.repository.js';
+import { getMaxResumes } from '@/shared/config/plan-limits.js';
 import { NotFoundError, PaymentRequiredError } from '@/shared/errors/app.error.js';
 import type { PaginatedResult, Pagination } from '@/shared/types/pagination.type.js';
 import {
@@ -22,7 +23,6 @@ import type {
 import {
 	allowedMimeTypes,
 	MAX_FILE_SIZE_BYTES,
-	PLAN_RESUME_LIMIT_FREE,
 	PRESIGNED_URL_EXPIRY_SECONDS,
 } from '../schemas/resumes.enums.js';
 
@@ -42,8 +42,10 @@ export class ResumesService {
 			throw new FileTooLargeError();
 		}
 
+		const profile = await this.usersRepository.findProfileByUserId(userId);
+		const maxResumes = getMaxResumes(profile?.plan ?? 'free');
 		const resumeCount = await this.resumesRepository.countByUser(userId);
-		if (resumeCount >= PLAN_RESUME_LIMIT_FREE) {
+		if (resumeCount >= maxResumes) {
 			throw new ResumeLimitReachedError();
 		}
 

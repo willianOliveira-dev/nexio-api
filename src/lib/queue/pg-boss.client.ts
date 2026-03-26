@@ -23,3 +23,10 @@ export type ScoreRecalculateJobData = {
 	resumeId: string;
 	userId: string;
 };
+
+export const EXPORT_GENERATE_JOB = 'export:generate' as const;
+
+export type ExportGenerateJobData = {
+	exportId: string;
+	userId: string;
+};

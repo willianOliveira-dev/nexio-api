@@ -27,13 +27,14 @@ export const auth = betterAuth({
 		provider: 'pg',
 		schema: schema,
 	}),
+
 	databaseHooks: {
 		user: {
 			create: {
 				after: async (user) => {
 					await db.insert(schema.userProfiles).values({
 						userId: user.id,
-						aiCreditsLimit: 5,
+						plan: 'free',
 						aiCreditsUsed: 0,
 					});
 				},

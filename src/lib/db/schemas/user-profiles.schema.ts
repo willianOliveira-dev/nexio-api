@@ -2,6 +2,7 @@ import {
 	boolean,
 	integer,
 	jsonb,
+	pgEnum,
 	pgTable,
 	text,
 	timestamp,
@@ -11,12 +12,15 @@ import {
 
 import { user } from './user.schema.js';
 
+export const userPlanEnum = pgEnum('user_plan', ['free', 'pro', 'enterprise']);
+
 export const userProfiles = pgTable('user_profiles', {
 	id: uuid('id').primaryKey().defaultRandom(),
 	userId: uuid('user_id')
 		.notNull()
 		.unique()
 		.references(() => user.id, { onDelete: 'cascade' }),
+	plan: userPlanEnum('plan').default('free').notNull(),
 	currentRole: varchar('current_role', { length: 255 }),
 	targetRole: varchar('target_role', { length: 255 }),
 	experienceLevel: varchar('experience_level', { length: 32 }).$type<
@@ -39,7 +43,6 @@ export const userProfiles = pgTable('user_profiles', {
 		.default('modern'),
 	careerGoals: text('career_goals'),
 	aiCreditsUsed: integer('ai_credits_used').default(0).notNull(),
-	aiCreditsLimit: integer('ai_credits_limit').default(5).notNull(),
 	createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 	updatedAt: timestamp('updated_at', { withTimezone: true })
 		.$onUpdate(() => new Date())

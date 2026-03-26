@@ -97,6 +97,50 @@ const handle: WorkHandler<ResumeAnalyzeJobData> = async (jobs) => {
 			);
 		}
 
+		if (content.projects?.length) {
+			await repository.upsertProjects(
+				resumeId,
+				content.projects.map((p, i) => ({
+					resumeId,
+					name: p.name,
+					description: p.description,
+					keywords: p.keywords ?? [],
+					url: p.url ?? null,
+					orderIndex: i,
+				})),
+			);
+		}
+
+		if (content.certifications?.length) {
+			await repository.upsertCertifications(
+				resumeId,
+				content.certifications.map((c, i) => ({
+					resumeId,
+					name: c.name,
+					issuer: c.issuer,
+					issueDate: c.issueDate ?? null,
+					expirationDate: c.expirationDate ?? null,
+					url: c.url ?? null,
+					orderIndex: i,
+				})),
+			);
+		}
+
+		if (content.volunteering?.length) {
+			await repository.upsertVolunteering(
+				resumeId,
+				content.volunteering.map((v, i) => ({
+					resumeId,
+					role: v.role,
+					organization: v.organization,
+					startDate: v.startDate ?? null,
+					endDate: v.endDate ?? null,
+					description: v.description ?? null,
+					orderIndex: i,
+				})),
+			);
+		}
+
 		await repository.createScore({
 			resumeId,
 			overall: score.overall,

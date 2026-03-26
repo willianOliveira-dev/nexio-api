@@ -8,6 +8,13 @@
       "when": 1774306920457,
       "tag": "0000_clever_zaran",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1774537980510,
+      "tag": "0001_acoustic_prowler",
+      "breakpoints": true
     }
   ]
 }
