@@ -188,7 +188,7 @@ const handle: WorkHandler<ExportGenerateJobData> = async (jobs) => {
 			.where(eq(schema.exports.id, exportId));
 
 		if (!exportRecord) {
-			console.warn(`[export:generate] Export ${exportId} não encontrado.`);
+			console.warn(`[export-generate] Export ${exportId} não encontrado.`);
 			continue;
 		}
 
@@ -235,7 +235,7 @@ const handle: WorkHandler<ExportGenerateJobData> = async (jobs) => {
 		await uploadToR2(storageKey, buffer, contentType);
 		await repository.updateStatus(exportId, 'completed', storageKey);
 
-		console.info(`[export:generate] Export ${exportId} concluído.`);
+		console.info(`[export-generate] Export ${exportId} concluído.`);
 	}
 };
 
@@ -249,10 +249,10 @@ export async function startExportGenerateWorker(): Promise<void> {
 			} catch (error) {
 				const message = error instanceof Error ? error.message : 'Erro desconhecido';
 				await repository.updateStatus(job.data.exportId, 'failed');
-				console.error(`[export:generate] job ${job.id} falhou:`, message);
+				console.error(`[export-generate] job ${job.id} falhou:`, message);
 			}
 		}
 	});
 
-	console.info('[export:generate] Worker iniciado e aguardando jobs.');
+	console.info('[export-generate] Worker iniciado e aguardando jobs.');
 }

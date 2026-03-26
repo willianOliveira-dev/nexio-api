@@ -15,7 +15,7 @@ const handle: WorkHandler<ScoreRecalculateJobData> = async (jobs) => {
 
 		const resume = await repository.findById(resumeId, userId);
 		if (!resume?.rawText) {
-			console.warn(`[score:recalculate] Resume ${resumeId} não encontrado ou sem rawText.`);
+			console.warn(`[score-recalculate] Resume ${resumeId} não encontrado ou sem rawText.`);
 			continue;
 		}
 
@@ -51,7 +51,7 @@ const handle: WorkHandler<ScoreRecalculateJobData> = async (jobs) => {
 			status: 'completed',
 		});
 
-		console.info(`[score:recalculate] Score recalculado p/ resume ${resumeId}.`);
+		console.info(`[score-recalculate] Score recalculado p/ resume ${resumeId}.`);
 	}
 };
 
@@ -64,10 +64,10 @@ export async function startScoreRecalculateWorker(): Promise<void> {
 				await handle([job]);
 			} catch (error) {
 				const message = error instanceof Error ? error.message : 'Erro desconhecido';
-				console.error(`[score:recalculate] job ${job.id} falhou:`, message);
+				console.error(`[score-recalculate] job ${job.id} falhou:`, message);
 			}
 		}
 	});
 
-	console.info('[score:recalculate] Worker iniciado e aguardando jobs.');
+	console.info('[score-recalculate] Worker iniciado e aguardando jobs.');
 }

@@ -7,12 +7,15 @@ export async function getBoss(): Promise<PgBoss> {
 	if (!boss) {
 		boss = new PgBoss({ connectionString: env.DATABASE_URL });
 		await boss.start();
+		console.info('[pg-boss] Instância iniciada e pronta.');
 	}
 	return boss;
 }
 
-export const RESUME_ANALYZE_JOB = 'resume:analyze' as const;
-export const SCORE_RECALCULATE_JOB = 'score:recalculate' as const;
+export const RESUME_ANALYZE_JOB = 'resume-analyze' as const;
+export const SCORE_RECALCULATE_JOB = 'score-recalculate' as const;
+export const EXPORT_GENERATE_JOB = 'export-generate' as const;
+export const CREDITS_RESET_JOB = 'credits-reset' as const;
 
 export type ResumeAnalyzeJobData = {
 	resumeId: string;
@@ -24,9 +27,19 @@ export type ScoreRecalculateJobData = {
 	userId: string;
 };
 
-export const EXPORT_GENERATE_JOB = 'export:generate' as const;
-
 export type ExportGenerateJobData = {
 	exportId: string;
 	userId: string;
 };
+
+export async function createQueues(): Promise<void> {
+	const boss = await getBoss();
+
+	// Cria as filas explicitamente
+	await boss.createQueue(RESUME_ANALYZE_JOB);
+	await boss.createQueue(EXPORT_GENERATE_JOB);
+	await boss.createQueue(SCORE_RECALCULATE_JOB);
+	await boss.createQueue(CREDITS_RESET_JOB);
+
+	console.info('[pg-boss] Filas criadas com sucesso.');
+}

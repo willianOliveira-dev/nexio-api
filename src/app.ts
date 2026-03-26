@@ -1,3 +1,4 @@
+import { serveStatic } from '@hono/node-server/serve-static';
 import { OpenAPIHono } from '@hono/zod-openapi';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
@@ -14,6 +15,7 @@ export function boostrapApp() {
 	app.use('*', timing());
 	app.use('*', logger());
 	app.use('*', secureHeaders());
+	app.use('/static/*', serveStatic({ root: './public' }));
 	app.use(
 		'*',
 		cors({

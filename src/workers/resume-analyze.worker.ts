@@ -85,7 +85,11 @@ const handle: WorkHandler<ResumeAnalyzeJobData> = async (jobs) => {
 			await repository.upsertSkills(
 				resumeId,
 				content.skills.flatMap((s) =>
-					s.items.map((item) => ({ resumeId, category: s.category, name: item })),
+					s.items.map((item) => ({
+						resumeId,
+						category: s.category,
+						name: item,
+					})),
 				),
 			);
 		}
@@ -93,7 +97,11 @@ const handle: WorkHandler<ResumeAnalyzeJobData> = async (jobs) => {
 		if (content.languages?.length) {
 			await repository.upsertLanguages(
 				resumeId,
-				content.languages.map((l) => ({ resumeId, name: l.language, proficiency: l.proficiency })),
+				content.languages.map((l) => ({
+					resumeId,
+					name: l.language,
+					proficiency: l.proficiency,
+				})),
 			);
 		}
 
@@ -172,10 +180,10 @@ export async function startResumeAnalyzeWorker(): Promise<void> {
 			} catch (error) {
 				const message = error instanceof Error ? error.message : 'Erro desconhecido';
 				await repository.updateStatus(job.data.resumeId, 'failed');
-				console.error(`[resume:analyze] job ${job.id} falhou:`, message);
+				console.error(`[resume-analyze] job ${job.id} falhou:`, message);
 			}
 		}
 	});
 
-	console.info('[resume:analyze] Worker iniciado e aguardando jobs.');
+	console.info('[resume-analyze] Worker iniciado e aguardando jobs.');
 }
