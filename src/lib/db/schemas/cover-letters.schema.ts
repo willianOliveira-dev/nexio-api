@@ -11,8 +11,12 @@ export const coverLetters = pgTable(
 		userId: uuid('user_id')
 			.notNull()
 			.references(() => user.id, { onDelete: 'cascade' }),
-		baseResumeId: uuid('base_resume_id').references(() => resumes.id, { onDelete: 'set null' }),
-		jobMatchId: uuid('job_match_id').references(() => jobMatches.id, { onDelete: 'set null' }),
+		baseResumeId: uuid('base_resume_id').references(() => resumes.id, {
+			onDelete: 'set null',
+		}),
+		jobMatchId: uuid('job_match_id').references(() => jobMatches.id, {
+			onDelete: 'set null',
+		}),
 		title: varchar('title', { length: 255 }).notNull(),
 		content: text('content').notNull(),
 		createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
@@ -27,3 +31,4 @@ export const coverLetters = pgTable(
 );
 
 export type CoverLetters = typeof coverLetters.$inferSelect;
+export type NewCoverLetter = typeof coverLetters.$inferInsert;

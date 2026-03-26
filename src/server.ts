@@ -1,9 +1,16 @@
 import { serve } from '@hono/node-server';
 import { boostrapApp } from './app.js';
 import { env } from './config/env.js';
+import { startAllWorkers } from './workers/index.js';
 
-const app = boostrapApp();
+async function startServer() {
+	const app = boostrapApp();
 
-serve({ fetch: app.fetch, port: env.PORT }, (info) => {
-	console.log(`Serve listening on http://localhost:${info.port}`);
-});
+	await startAllWorkers();
+
+	serve({ fetch: app.fetch, port: env.PORT }, (info) => {
+		console.log(`Serve listening on http://localhost:${info.port}`);
+	});
+}
+
+startServer();

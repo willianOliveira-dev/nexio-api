@@ -7,6 +7,10 @@ import type { ExportGenerateJobData } from '@/lib/queue/pg-boss.client.js';
 import { EXPORT_GENERATE_JOB, getBoss } from '@/lib/queue/pg-boss.client.js';
 import { uploadToR2 } from '@/lib/r2/r2.client.js';
 import { ExportsRepository } from '@/modules/exports/repositories/exports.repository.js';
+import { buildCoverLetterDocx } from '@/shared/templates/cover-letter-docx.template.js';
+import { buildCoverLetterPdf } from '@/shared/templates/cover-letter-pdf.template.js';
+import { buildCoverLetterPlainText } from '@/shared/templates/cover-letter-plaintext.template.js';
+import type { ExportCoverLetterData } from '@/shared/templates/cover-letter-types.js';
 import type { ExportResumeData } from '@/shared/templates/export-types.js';
 import { buildResumeDocx } from '@/shared/templates/resume-docx.template.js';
 import { buildResumePdf } from '@/shared/templates/resume-pdf.template.js';
@@ -96,7 +100,21 @@ async function loadResumeVersionData(versionId: string): Promise<ExportResumeDat
 	};
 }
 
-async function generateFile(
+async function loadCoverLetterData(coverLetterId: string): Promise<ExportCoverLetterData> {
+	const [coverLetter] = await db
+		.select()
+		.from(schema.coverLetters)
+		.where(eq(schema.coverLetters.id, coverLetterId));
+
+	if (!coverLetter) throw new Error(`Cover letter ${coverLetterId} não encontrada.`);
+
+	return {
+		title: coverLetter.title,
+		content: coverLetter.content,
+	};
+}
+
+async function generateResumeFile(
 	exportRecord: Exports,
 	data: ExportResumeData,
 ): Promise<{ buffer: Buffer; contentType: string; ext: string }> {
@@ -117,7 +135,43 @@ async function generateFile(
 		}
 		case 'plain_text': {
 			const text = buildResumePlainText(data, language);
-			return { buffer: Buffer.from(text, 'utf-8'), contentType: 'text/plain', ext: 'txt' };
+			return {
+				buffer: Buffer.from(text, 'utf-8'),
+				contentType: 'text/plain',
+				ext: 'txt',
+			};
+		}
+		default:
+			throw new Error(`Formato não suportado: ${exportRecord.format}`);
+	}
+}
+
+async function generateCoverLetterFile(
+	exportRecord: Exports,
+	data: ExportCoverLetterData,
+): Promise<{ buffer: Buffer; contentType: string; ext: string }> {
+	const language = exportRecord.language as 'pt' | 'en';
+
+	switch (exportRecord.format) {
+		case 'pdf': {
+			const buffer = await buildCoverLetterPdf(data, language);
+			return { buffer, contentType: 'application/pdf', ext: 'pdf' };
+		}
+		case 'docx': {
+			const buffer = await buildCoverLetterDocx(data);
+			return {
+				buffer,
+				contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+				ext: 'docx',
+			};
+		}
+		case 'plain_text': {
+			const text = buildCoverLetterPlainText(data);
+			return {
+				buffer: Buffer.from(text, 'utf-8'),
+				contentType: 'text/plain',
+				ext: 'txt',
+			};
 		}
 		default:
 			throw new Error(`Formato não suportado: ${exportRecord.format}`);
@@ -140,44 +194,42 @@ const handle: WorkHandler<ExportGenerateJobData> = async (jobs) => {
 
 		await repository.updateStatus(exportId, 'running');
 
-		let data: ExportResumeData;
+		let buffer: Buffer;
+		let contentType: string;
+		let ext: string;
 
 		switch (exportRecord.documentType) {
 			case 'resume': {
 				if (!exportRecord.resumeId) throw new Error('resumeId ausente.');
-				data = await loadResumeData(exportRecord.resumeId);
+				const data = await loadResumeData(exportRecord.resumeId);
+				const result = await generateResumeFile(exportRecord, data);
+				buffer = result.buffer;
+				contentType = result.contentType;
+				ext = result.ext;
 				break;
 			}
 			case 'resume_version': {
 				if (!exportRecord.resumeVersionId) throw new Error('resumeVersionId ausente.');
-				data = await loadResumeVersionData(exportRecord.resumeVersionId);
+				const data = await loadResumeVersionData(exportRecord.resumeVersionId);
+				const result = await generateResumeFile(exportRecord, data);
+				buffer = result.buffer;
+				contentType = result.contentType;
+				ext = result.ext;
 				break;
 			}
 			case 'cover_letter': {
 				if (!exportRecord.coverLetterId) throw new Error('coverLetterId ausente.');
-				const [cl] = await db
-					.select()
-					.from(schema.coverLetters)
-					.where(eq(schema.coverLetters.id, exportRecord.coverLetterId));
-				if (!cl) throw new Error('Cover letter não encontrada.');
-				data = {
-					contact: { fullName: '', email: '' },
-					professionalSummary: cl.content,
-					workExperiences: [],
-					educations: [],
-					skills: [],
-					languages: [],
-					projects: [],
-					certifications: [],
-					volunteering: [],
-				};
+				const data = await loadCoverLetterData(exportRecord.coverLetterId);
+				const result = await generateCoverLetterFile(exportRecord, data);
+				buffer = result.buffer;
+				contentType = result.contentType;
+				ext = result.ext;
 				break;
 			}
 			default:
 				throw new Error(`Tipo de documento desconhecido: ${exportRecord.documentType}`);
 		}
 
-		const { buffer, contentType, ext } = await generateFile(exportRecord, data);
 		const storageKey = `exports/${userId}/${exportId}.${ext}`;
 
 		await uploadToR2(storageKey, buffer, contentType);
