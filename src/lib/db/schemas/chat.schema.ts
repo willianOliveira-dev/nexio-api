@@ -8,6 +8,7 @@ import {
 	uuid,
 	varchar,
 } from 'drizzle-orm/pg-core';
+import { jobMatches } from './job-matches.schema.js';
 import { resumes } from './resumes.schema.js';
 import { user } from './user.schema.js';
 
@@ -19,6 +20,9 @@ export const chatSessions = pgTable(
 			.notNull()
 			.references(() => user.id, { onDelete: 'cascade' }),
 		resumeId: uuid('resume_id').references(() => resumes.id, {
+			onDelete: 'set null',
+		}),
+		jobMatchId: uuid('job_match_id').references(() => jobMatches.id, {
 			onDelete: 'set null',
 		}),
 		title: varchar('title', { length: 255 }),
@@ -51,4 +55,6 @@ export const messages = pgTable(
 );
 
 export type ChatSessions = typeof chatSessions.$inferSelect;
+export type NewChatSession = typeof chatSessions.$inferInsert;
 export type Messages = typeof messages.$inferSelect;
+export type NewMessage = typeof messages.$inferInsert;

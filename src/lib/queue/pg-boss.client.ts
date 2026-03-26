@@ -12,8 +12,14 @@ export async function getBoss(): Promise<PgBoss> {
 }
 
 export const RESUME_ANALYZE_JOB = 'resume:analyze' as const;
+export const SCORE_RECALCULATE_JOB = 'score:recalculate' as const;
 
 export type ResumeAnalyzeJobData = {
+	resumeId: string;
+	userId: string;
+};
+
+export type ScoreRecalculateJobData = {
 	resumeId: string;
 	userId: string;
 };
