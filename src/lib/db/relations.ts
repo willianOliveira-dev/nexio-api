@@ -11,6 +11,7 @@ import { resumeScores } from './schemas/resume-scores.schema.js';
 import { resumeVersions } from './schemas/resume-versions.schema.js';
 import { resumes } from './schemas/resumes.schema.js';
 import { skills } from './schemas/skills.schema.js';
+import { subscriptions } from './schemas/subscriptions.schema.js';
 import { usageLimits } from './schemas/usage-schema.js';
 import { user } from './schemas/user.schema.js';
 import { userProfiles } from './schemas/user-profiles.schema.js';
@@ -22,6 +23,10 @@ export const usersRelations = relations(user, ({ one, many }) => ({
 	profile: one(userProfiles, {
 		fields: [user.id],
 		references: [userProfiles.userId],
+	}),
+	subscription: one(subscriptions, {
+		fields: [user.id],
+		references: [subscriptions.userId],
 	}),
 	usageLimit: one(usageLimits, {
 		fields: [user.id],
@@ -45,6 +50,18 @@ export const sessionRelations = relations(session, ({ one }) => ({
 
 export const userProfilesRelations = relations(userProfiles, ({ one }) => ({
 	user: one(user, { fields: [userProfiles.userId], references: [user.id] }),
+	subscription: one(subscriptions, {
+		fields: [userProfiles.subscriptionId],
+		references: [subscriptions.id],
+	}),
+}));
+
+export const subscriptionsRelations = relations(subscriptions, ({ one }) => ({
+	user: one(user, { fields: [subscriptions.userId], references: [user.id] }),
+	profile: one(userProfiles, {
+		fields: [subscriptions.id],
+		references: [userProfiles.subscriptionId],
+	}),
 }));
 
 export const usageLimitsRelations = relations(usageLimits, ({ one }) => ({

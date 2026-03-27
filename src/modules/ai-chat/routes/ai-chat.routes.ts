@@ -33,7 +33,7 @@ aiChatRoutes.openapi(
 		operationId: 'createChatSession',
 		tags: ['AI Chat'],
 		summary: 'Cria uma nova sessão de chat com a IA',
-		middleware: [authenticateMiddleware] as const,
+		middleware: [authenticateMiddleware],
 		request: {
 			body: {
 				required: true,
@@ -77,7 +77,7 @@ aiChatRoutes.openapi(
 		operationId: 'listChatSessions',
 		tags: ['AI Chat'],
 		summary: 'Lista as sessões de chat do usuário com paginação',
-		middleware: [authenticateMiddleware] as const,
+		middleware: [authenticateMiddleware],
 		request: { query: paginationQuerySchema },
 		responses: {
 			200: {
@@ -116,7 +116,7 @@ aiChatRoutes.openapi(
 		operationId: 'getChatSession',
 		tags: ['AI Chat'],
 		summary: 'Obtém uma sessão de chat com mensagens paginadas',
-		middleware: [authenticateMiddleware] as const,
+		middleware: [authenticateMiddleware],
 		request: {
 			params: z.object({ id: z.string().uuid() }),
 			query: paginationQuerySchema,
@@ -164,7 +164,7 @@ aiChatRoutes.openapi(
 		operationId: 'sendChatMessage',
 		tags: ['AI Chat'],
 		summary: 'Envia uma mensagem para a IA e recebe a resposta (consome 1 crédito)',
-		middleware: [authenticateMiddleware] as const,
+		middleware: [authenticateMiddleware],
 		request: {
 			params: z.object({ id: z.string().uuid() }),
 			body: {
@@ -208,7 +208,7 @@ aiChatRoutes.openapi(
 		operationId: 'applyChatSuggestion',
 		tags: ['AI Chat'],
 		summary: 'Aplica uma sugestão da IA ao currículo e cria uma versão',
-		middleware: [authenticateMiddleware] as const,
+		middleware: [authenticateMiddleware],
 		request: {
 			params: z.object({ id: z.string().uuid() }),
 			body: {
@@ -242,7 +242,7 @@ aiChatRoutes.openapi(
 		operationId: 'closeChatSession',
 		tags: ['AI Chat'],
 		summary: 'Encerra uma sessão de chat',
-		middleware: [authenticateMiddleware] as const,
+		middleware: [authenticateMiddleware],
 		request: {
 			params: z.object({ id: z.string().uuid() }),
 		},

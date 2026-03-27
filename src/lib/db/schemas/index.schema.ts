@@ -12,6 +12,7 @@ export * from './resume-scores.schema.js';
 export * from './resume-versions.schema.js';
 export * from './resumes.schema.js';
 export * from './skills.schema.js';
+export * from './subscriptions.schema.js';
 export * from './usage-schema.js';
 export * from './user.schema.js';
 export * from './user-profiles.schema.js';

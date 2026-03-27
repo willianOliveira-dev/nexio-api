@@ -1,6 +1,17 @@
 export type UserPlan = 'free' | 'pro' | 'enterprise';
 
+export type SubscriptionStatus =
+	| 'active'
+	| 'canceled'
+	| 'past_due'
+	| 'trialing'
+	| 'incomplete'
+	| 'incomplete_expired'
+	| 'unpaid';
+
 export type ExportFormat = 'pdf' | 'docx' | 'plain_text';
+
+export const UNLIMITED = -1 as const;
 
 type PlanConfig = {
 	maxResumes: number;
@@ -56,4 +67,14 @@ export function getMaxResumes(plan: UserPlan): number {
 
 export function getAiCreditsPerMonth(plan: UserPlan): number {
 	return PLAN_LIMITS[plan].aiCreditsPerMonth;
+}
+
+export function getMaxResumesForApi(plan: UserPlan): number {
+	const v = PLAN_LIMITS[plan].maxResumes;
+	return v === Infinity ? UNLIMITED : v;
+}
+
+export function getAiCreditsForApi(plan: UserPlan): number {
+	const v = PLAN_LIMITS[plan].aiCreditsPerMonth;
+	return v === Infinity ? UNLIMITED : v;
 }

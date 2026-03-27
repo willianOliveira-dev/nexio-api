@@ -6,6 +6,8 @@ import { exportsRoutes } from '@/modules/exports/routes/exports.routes.js';
 import { healthRoutes } from '@/modules/health/routes/healt.routes.js';
 import { jobMatchesRoutes } from '@/modules/job-matches/routes/job-matches.routes.js';
 import { resumesRoutes } from '@/modules/resumes/routes/resumes.routes.js';
+import { subscriptionsRoutes } from '@/modules/subscriptions/routes/subscriptions.routes.js';
+import { webhooksRoutes } from '@/modules/subscriptions/routes/webhooks.routes.js';
 import { swaggerRoutes } from '@/modules/swagger/routes/swagger.routes.js';
 import { usersRoutes } from '@/modules/users/routes/users.routes.js';
 
@@ -18,5 +20,7 @@ export function regiterRoutes(app: OpenAPIHono) {
 	app.route('/api/v1', aiChatRoutes);
 	app.route('/api/v1', coverLettersRoutes);
 	app.route('/api/v1', exportsRoutes);
+	app.route('/api/v1', subscriptionsRoutes);
+	app.route('/api/v1', webhooksRoutes);
 	swaggerRoutes(app);
 }

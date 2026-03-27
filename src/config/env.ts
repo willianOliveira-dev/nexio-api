@@ -29,6 +29,11 @@ const envSchema = z.object({
 	R2_BUCKET_NAME: z.string(),
 	R2_ENDPOINT: z.string(),
 	FRONTEND_URL: z.string(),
+
+	STRIPE_SECRET_KEY: z.string(),
+	STRIPE_WEBHOOK_SECRET: z.string(),
+	STRIPE_PRICE_ID_PRO_MONTHLY: z.string(),
+	STRIPE_PRICE_ID_ENTERPRISE_MONTHLY: z.string(),
 });
 
 export const env = envSchema.parse(process.env);
