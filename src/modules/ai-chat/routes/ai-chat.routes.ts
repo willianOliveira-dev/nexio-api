@@ -12,7 +12,6 @@ import { createSessionBodySchema } from '../schemas/create-session.dto.js';
 import {
 	applySuggestionResponseSchema,
 	closeSessionResponseSchema,
-	messageResponseSchema,
 	paginatedSessionsSchema,
 	sessionDetailSchema,
 } from '../schemas/responses.schema.js';
@@ -174,8 +173,8 @@ aiChatRoutes.openapi(
 		},
 		responses: {
 			200: {
-				description: 'Mensagem do assistente',
-				content: { 'application/json': { schema: messageResponseSchema } },
+				description: 'Stream da resposta via SSE (Server-Sent Events)',
+				content: { 'text/event-stream': { schema: z.string() } },
 			},
 			400: createValidationErrorResponse('Dados inválidos ou sessão encerrada'),
 			402: createAppErrorResponse('Créditos de IA esgotados'),
@@ -186,18 +185,9 @@ aiChatRoutes.openapi(
 	async (c) => {
 		const { user } = c.get('session');
 		const { id } = c.req.valid('param');
-		const { content } = c.req.valid('json');
-		const message = await controller.sendMessage(id, user.id, content);
-		return c.json(
-			{
-				id: message.id,
-				role: message.role,
-				content: message.content,
-				suggestion: message.suggestion ?? null,
-				createdAt: message.createdAt.toISOString(),
-			},
-			200,
-		);
+		const body = c.req.valid('json');
+		const response = await controller.sendMessage(id, user.id, body);
+		return response;
 	},
 );
 

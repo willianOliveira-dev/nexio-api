@@ -1,4 +1,6 @@
-import { groq } from '@/lib/ai/groq.client.js';
+import { createGroq } from '@ai-sdk/groq';
+import { streamText } from 'ai';
+import { env } from '@/config/env.js';
 import type { ResumeContent } from '@/lib/db/schemas/resumes.schema.js';
 import { getBoss, SCORE_RECALCULATE_JOB } from '@/lib/queue/pg-boss.client.js';
 import type { JobMatchesRepository } from '@/modules/job-matches/repositories/job-matches.repository.js';
@@ -85,7 +87,7 @@ export class AiChatService {
 		return this.aiChatRepository.findSessionsByUser(userId, pagination);
 	}
 
-	async sendMessage(sessionId: string, userId: string, content: string): Promise<Messages> {
+	async sendMessageStream(sessionId: string, userId: string, content: string): Promise<Response> {
 		const session = await this.aiChatRepository.findSessionById(sessionId, userId);
 		if (!session) throw new NotFoundError('Sessão de chat');
 
@@ -105,50 +107,51 @@ export class AiChatService {
 		const systemPrompt = await this.buildSystemPrompt(session, userId);
 		const history = await this.aiChatRepository.findAllMessagesBySession(sessionId);
 
-		const messages: { role: 'system' | 'user' | 'assistant'; content: string }[] = [
-			{ role: 'system', content: systemPrompt },
-			...history.map((m) => ({
-				role: m.role as 'user' | 'assistant',
-				content: m.content,
-			})),
-		];
+		const chatMessages: { role: 'user' | 'assistant'; content: string }[] = history.map((m) => ({
+			role: m.role as 'user' | 'assistant',
+			content: m.content,
+		}));
 
 		const startTime = Date.now();
-		const completion = await groq.chat.completions.create({
-			model: 'llama-3.3-70b-versatile',
+		const groqProvider = createGroq({ apiKey: env.GROQ_API_KEY });
+
+		const result = streamText({
+			model: groqProvider('llama-3.3-70b-versatile'),
+			system: systemPrompt,
 			temperature: 0.6,
-			max_tokens: 2048,
-			messages,
+			maxOutputTokens: 2048,
+			messages: chatMessages,
+			onFinish: async (event) => {
+				const durationMs = Date.now() - startTime;
+
+				if (!event.text) return;
+
+				const suggestion = this.parseSuggestion(event.text);
+				const cleanContent = this.cleanContent(event.text);
+
+				await this.aiChatRepository.createMessage({
+					sessionId,
+					role: 'assistant',
+					content: cleanContent,
+					suggestion,
+				});
+
+				await this.aiChatRepository.createAiAction({
+					userId,
+					sessionId,
+					resumeId: session.resumeId,
+					type: suggestion ? 'rewrite_section' : 'improve_section',
+					status: 'completed',
+					inputTokens: event.usage.inputTokens ?? 0,
+					outputTokens: event.usage.outputTokens ?? 0,
+					durationMs,
+				});
+
+				await this.usersRepository.incrementCreditsUsed(userId);
+			},
 		});
-		const durationMs = Date.now() - startTime;
 
-		const rawContent = completion.choices[0]?.message?.content;
-		if (!rawContent) throw new BadRequestError('A IA não retornou uma resposta válida.');
-
-		const suggestion = this.parseSuggestion(rawContent);
-		const cleanContent = this.cleanContent(rawContent);
-
-		const assistantMessage = await this.aiChatRepository.createMessage({
-			sessionId,
-			role: 'assistant',
-			content: cleanContent,
-			suggestion,
-		});
-
-		await this.aiChatRepository.createAiAction({
-			userId,
-			sessionId,
-			resumeId: session.resumeId,
-			type: suggestion ? 'rewrite_section' : 'improve_section',
-			status: 'completed',
-			inputTokens: completion.usage?.prompt_tokens ?? null,
-			outputTokens: completion.usage?.completion_tokens ?? null,
-			durationMs,
-		});
-
-		await this.usersRepository.incrementCreditsUsed(userId);
-
-		return assistantMessage;
+		return result.toTextStreamResponse();
 	}
 
 	async applySuggestion(

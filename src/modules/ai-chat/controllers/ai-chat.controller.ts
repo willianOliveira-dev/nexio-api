@@ -2,10 +2,11 @@ import { JobMatchesRepository } from '@/modules/job-matches/repositories/job-mat
 import { ResumesRepository } from '@/modules/resumes/repositories/resumes.repository.js';
 import { UsersRepository } from '@/modules/users/repositories/users.repository.js';
 import type { PaginatedResult, Pagination } from '@/shared/types/pagination.type.js';
-import type { ChatSessions, Messages } from '../repositories/ai-chat.repository.js';
+import type { ChatSessions } from '../repositories/ai-chat.repository.js';
 import { AiChatRepository } from '../repositories/ai-chat.repository.js';
 import type { ApplySuggestionDTO } from '../schemas/apply-suggestion.dto.js';
 import type { CreateSessionDTO } from '../schemas/create-session.dto.js';
+import type { SendMessageDTO } from '../schemas/send-message.dto.js';
 import { AiChatService } from '../services/ai-chat.service.js';
 
 export class AiChatController {
@@ -32,8 +33,10 @@ export class AiChatController {
 		return this.service.listSessions(userId, pagination);
 	}
 
-	sendMessage(sessionId: string, userId: string, content: string): Promise<Messages> {
-		return this.service.sendMessage(sessionId, userId, content);
+	sendMessage(sessionId: string, userId: string, payload: SendMessageDTO): Promise<Response> {
+		const content = payload.content || payload.messages?.[payload.messages.length - 1]?.content;
+		if (!content) throw new Error('Content is required');
+		return this.service.sendMessageStream(sessionId, userId, content);
 	}
 
 	applySuggestion(sessionId: string, userId: string, data: ApplySuggestionDTO) {
