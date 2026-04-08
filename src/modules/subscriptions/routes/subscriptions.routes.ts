@@ -48,7 +48,7 @@ subscriptionsRoutes.openapi(
 		operationId: 'createCheckout',
 		tags: ['Subscriptions'],
 		summary: 'Cria uma sessão de checkout do Stripe para upgrade de plano (Pro ou Enterprise)',
-		middleware: [authenticateMiddleware] as const,
+		middleware: [authenticateMiddleware],
 		request: {
 			body: {
 				required: true,
@@ -79,7 +79,7 @@ subscriptionsRoutes.openapi(
 		operationId: 'getSubscription',
 		tags: ['Subscriptions'],
 		summary: 'Obtém a assinatura atual do usuário autenticado',
-		middleware: [authenticateMiddleware] as const,
+		middleware: [authenticateMiddleware],
 		responses: {
 			200: {
 				description: 'Dados da assinatura retornados com sucesso',
@@ -103,7 +103,7 @@ subscriptionsRoutes.openapi(
 		operationId: 'cancelSubscription',
 		tags: ['Subscriptions'],
 		summary: 'Agenda o cancelamento da assinatura ao fim do período atual',
-		middleware: [authenticateMiddleware] as const,
+		middleware: [authenticateMiddleware],
 		responses: {
 			200: {
 				description: 'Cancelamento agendado com sucesso',
@@ -128,7 +128,7 @@ subscriptionsRoutes.openapi(
 		operationId: 'resumeSubscription',
 		tags: ['Subscriptions'],
 		summary: 'Reativa uma assinatura com cancelamento agendado antes do fim do período',
-		middleware: [authenticateMiddleware] as const,
+		middleware: [authenticateMiddleware],
 		responses: {
 			200: {
 				description: 'Assinatura reativada com sucesso',
@@ -153,7 +153,7 @@ subscriptionsRoutes.openapi(
 		operationId: 'createPortalSession',
 		tags: ['Subscriptions'],
 		summary: 'Cria sessão do Stripe Customer Portal para gerenciar assinaturas e faturas',
-		middleware: [authenticateMiddleware] as const,
+		middleware: [authenticateMiddleware],
 		responses: {
 			200: {
 				description: 'URL do portal gerada com sucesso. Redirecione o usuário para `url`.',

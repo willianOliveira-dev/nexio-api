@@ -13,6 +13,9 @@ export const auth = betterAuth({
 	advanced: {
 		disableOriginCheck: env.NODE_ENV !== 'production',
 	},
+	emailAndPassword: {
+		enabled: true,
+	},
 	socialProviders: {
 		google: {
 			clientId: env.GOOGLE_CLIENT_ID,
@@ -44,6 +47,5 @@ export const auth = betterAuth({
 	session: {
 		expiresIn: 60 * 60 * 24 * 7,
 	},
-
 	plugins: [openAPI(), localization({ defaultLocale: 'pt-BR' })],
 });
