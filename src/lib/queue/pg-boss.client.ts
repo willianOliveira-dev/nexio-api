@@ -6,6 +6,16 @@ let boss: PgBoss | null = null;
 export async function getBoss(): Promise<PgBoss> {
 	if (!boss) {
 		boss = new PgBoss({ connectionString: env.DATABASE_URL });
+
+		boss.on('error', (error: Error) => {
+			console.error('[pg-boss] Erro capturado:', error.message);
+		});
+
+		boss.on('stopped', () => {
+			console.warn('[pg-boss] Instância parou. Resetando referência para reconexão.');
+			boss = null;
+		});
+
 		await boss.start();
 		console.info('[pg-boss] Instância iniciada e pronta.');
 	}
