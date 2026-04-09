@@ -1,5 +1,3 @@
-// TODO - REFATORAR PARA ENUMS PONTOS QUE SERIAM MAIS VIÁVEIS DO QUE TYPE
-
 import {
 	boolean,
 	integer,
