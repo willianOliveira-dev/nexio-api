@@ -1,4 +1,4 @@
-import { groq } from '@/lib/ai/groq.client.js';
+import { openRouterClient } from '@/lib/ai/openrouter.provider.js';
 import type { ResumesRepository } from '@/modules/resumes/repositories/resumes.repository.js';
 import type { UsersRepository } from '@/modules/users/repositories/users.repository.js';
 import { canUseJobMatch } from '@/shared/config/plan-limits.js';
@@ -16,7 +16,7 @@ import type { PaginatedResult, Pagination } from '@/shared/types/pagination.type
 import type { JobMatches, JobMatchesRepository } from '../repositories/job-matches.repository.js';
 import type { CreateJobMatchDTO } from '../schemas/create-job-match.dto.js';
 
-type GroqAnalysisResult = {
+type AiAnalysisResult = {
 	matchScore: number;
 	foundKeywords: string[];
 	missingKeywords: string[];
@@ -53,7 +53,7 @@ export class JobMatchesService {
 		if (creditsRemaining <= 0) throw new PaymentRequiredError('Créditos de IA esgotados');
 		await this.usersRepository.incrementCreditsUsed(userId);
 
-		const result = await this.callGroq(resume.rawText, data.jobDescription);
+		const result = await this.analyzeWithAi(resume.rawText, data.jobDescription);
 
 		return this.jobMatchesRepository.create({
 			userId,
@@ -89,9 +89,9 @@ export class JobMatchesService {
 		await this.jobMatchesRepository.delete(id, userId);
 	}
 
-	private async callGroq(rawText: string, jobDescription: string): Promise<GroqAnalysisResult> {
-		const completion = await groq.chat.completions.create({
-			model: 'llama-3.3-70b-versatile',
+	private async analyzeWithAi(rawText: string, jobDescription: string): Promise<AiAnalysisResult> {
+		const completion = await openRouterClient.chat.completions.create({
+			model: 'meta-llama/llama-3.3-70b-instruct:free',
 			temperature: 0.2,
 			response_format: { type: 'json_object' },
 			messages: [
@@ -104,7 +104,7 @@ export class JobMatchesService {
 
 		if (!content) throw new BadRequestError('A IA não retornou uma resposta válida.');
 
-		const parsed = JSON.parse(content) as GroqAnalysisResult;
+		const parsed = JSON.parse(content) as AiAnalysisResult;
 		return parsed;
 	}
 }

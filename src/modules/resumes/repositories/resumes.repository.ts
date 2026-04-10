@@ -1,4 +1,4 @@
-import { and, count, desc, eq } from 'drizzle-orm';
+import { and, asc, count, desc, eq, ilike, inArray } from 'drizzle-orm';
 import { db } from '@/lib/db/connection.js';
 import type {
 	Certifications,
@@ -24,6 +24,14 @@ import type {
 } from '@/lib/db/schemas/index.schema.js';
 import * as schema from '@/lib/db/schemas/index.schema.js';
 import type { PaginatedResult, Pagination } from '@/shared/types/pagination.type.js';
+import type { ResumeStatus } from '../schemas/resumes.enums.js';
+
+export type ListResumesFilter = {
+	search?: string | undefined;
+	status?: ResumeStatus[] | undefined;
+	sortBy: 'createdAt' | 'fileName';
+	sortOrder: 'asc' | 'desc';
+};
 
 export class ResumesRepository {
 	async create(data: NewResume): Promise<Resumes> {
@@ -40,19 +48,39 @@ export class ResumesRepository {
 		return resume ?? null;
 	}
 
-	async findAllByUser(userId: string, pagination: Pagination): Promise<PaginatedResult<Resumes>> {
+	async findAllByUser(
+		userId: string,
+		pagination: Pagination,
+		filter: ListResumesFilter,
+	): Promise<PaginatedResult<Resumes>> {
 		const { page, limit } = pagination;
 		const offset = (page - 1) * limit;
+
+		const conditions = [eq(schema.resumes.userId, userId)];
+
+		if (filter.search) {
+			conditions.push(ilike(schema.resumes.fileName, `%${filter.search}%`));
+		}
+
+		if (filter.status && filter.status.length > 0) {
+			conditions.push(inArray(schema.resumes.status, filter.status));
+		}
+
+		const whereClause = conditions.length > 1 ? and(...conditions) : conditions[0];
+
+		const orderColumn =
+			filter.sortBy === 'fileName' ? schema.resumes.fileName : schema.resumes.createdAt;
+		const orderByClause = filter.sortOrder === 'asc' ? asc(orderColumn) : desc(orderColumn);
 
 		const [rows, [countRow]] = await Promise.all([
 			db
 				.select()
 				.from(schema.resumes)
-				.where(eq(schema.resumes.userId, userId))
-				.orderBy(desc(schema.resumes.createdAt))
+				.where(whereClause)
+				.orderBy(orderByClause)
 				.limit(limit)
 				.offset(offset),
-			db.select({ value: count() }).from(schema.resumes).where(eq(schema.resumes.userId, userId)),
+			db.select({ value: count() }).from(schema.resumes).where(whereClause),
 		]);
 
 		const total = countRow?.value ?? 0;

@@ -27,6 +27,8 @@ You can help the user with:
   5. Tailoring their resume to a specific job description (when job match context is available)
   6. Explaining why certain changes improve their chances
   7. Suggesting easy/medium/hard improvements ranked by impact
+  8. Using the "webSearch" tool to find real-time information, latest market trends, salary data, or news when necessary to enrich your advice
+  9. Analyzing user-provided images or documents to provide precise feedback based on those files
 
 ---------------------------------------------------------
 SUGGESTION FORMAT
@@ -113,34 +115,34 @@ export function buildAiChatSystemPrompt(ctx: AiChatPromptContext): string {
 	prompt += '\n---------------------------------------------------------';
 
 	prompt += '\n\nRESUME CONTENT (JSON):';
-	prompt += '\n' + ctx.resumeContent;
+	prompt += `\n${ctx.resumeContent}`;
 
-	prompt += '\n\nCURRENT SCORE: ' + ctx.overall + '/100';
-	prompt += '\n- Impact: ' + ctx.impact;
-	prompt += ' | ATS: ' + ctx.atsScore;
-	prompt += ' | Keywords: ' + ctx.keywords;
-	prompt += ' | Clarity: ' + ctx.clarity;
+	prompt += `\n\nCURRENT SCORE: ${ctx.overall}/100`;
+	prompt += `\n- Impact: ${ctx.impact}`;
+	prompt += ` | ATS: ${ctx.atsScore}`;
+	prompt += ` | Keywords: ${ctx.keywords}`;
+	prompt += ` | Clarity: ${ctx.clarity}`;
 
 	if (ctx.improvements) {
 		prompt += '\n\nAREAS FOR IMPROVEMENT:';
-		prompt += '\n' + ctx.improvements;
+		prompt += `\n${ctx.improvements}`;
 	}
 
 	if (ctx.missingKeywords) {
 		prompt += '\n\nMISSING KEYWORDS:';
-		prompt += '\n' + ctx.missingKeywords;
+		prompt += `\n${ctx.missingKeywords}`;
 	}
 
 	if (ctx.jobMatchContext) {
 		prompt += '\n\n---------------------------------------------------------';
 		prompt += '\nJOB MATCH CONTEXT';
 		prompt += '\n---------------------------------------------------------';
-		prompt += '\n' + ctx.jobMatchContext;
+		prompt += `\n${ctx.jobMatchContext}`;
 	}
 
 	prompt += '\n\nUSER PREFERENCES:';
-	prompt += '\n- Writing tone: ' + ctx.writingTone;
-	prompt += '\n- Preferred language: ' + ctx.preferredLanguage;
+	prompt += `\n- Writing tone: ${ctx.writingTone}`;
+	prompt += `\n- Preferred language: ${ctx.preferredLanguage}`;
 
 	return prompt;
 }

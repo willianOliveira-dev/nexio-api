@@ -1,5 +1,5 @@
 import type { WorkHandler } from 'pg-boss';
-import { groq } from '@/lib/ai/groq.client.js';
+import { openRouterClient } from '@/lib/ai/openrouter.provider.js';
 import type { ResumeContent } from '@/lib/db/schemas/resumes.schema.js';
 import type { ScoreRecalculateJobData } from '@/lib/queue/pg-boss.client.js';
 import { getBoss, SCORE_RECALCULATE_JOB } from '@/lib/queue/pg-boss.client.js';
@@ -19,8 +19,8 @@ const handle: WorkHandler<ScoreRecalculateJobData> = async (jobs) => {
 			continue;
 		}
 
-		const completion = await groq.chat.completions.create({
-			model: 'llama-3.3-70b-versatile',
+		const completion = await openRouterClient.chat.completions.create({
+			model: 'meta-llama/llama-3.3-70b-instruct:free',
 			response_format: { type: 'json_object' },
 			messages: [
 				{ role: 'system', content: RESUME_PARSE_SYSTEM_PROMPT },

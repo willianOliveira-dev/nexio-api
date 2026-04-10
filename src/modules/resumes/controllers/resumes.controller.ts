@@ -1,6 +1,7 @@
 import type { ResumeScores, Resumes, ResumeVersions } from '@/lib/db/schemas/index.schema.js';
 import { UsersRepository } from '@/modules/users/repositories/users.repository.js';
 import type { PaginatedResult, Pagination } from '@/shared/types/pagination.type.js';
+import type { ListResumesFilter } from '../repositories/resumes.repository.js';
 import { ResumesRepository } from '../repositories/resumes.repository.js';
 import type { ResumeWithScore } from '../services/resumes.service.js';
 import { ResumesService } from '../services/resumes.service.js';
@@ -20,8 +21,12 @@ export class ResumesController {
 		return this.service.getResume(id, userId);
 	}
 
-	listResumes(userId: string, pagination: Pagination): Promise<PaginatedResult<ResumeWithScore>> {
-		return this.service.listResumes(userId, pagination);
+	listResumes(
+		userId: string,
+		pagination: Pagination,
+		filter: ListResumesFilter,
+	): Promise<PaginatedResult<ResumeWithScore>> {
+		return this.service.listResumes(userId, pagination, filter);
 	}
 
 	deleteResume(id: string, userId: string): Promise<void> {

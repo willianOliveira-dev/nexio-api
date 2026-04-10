@@ -15,6 +15,7 @@ import {
 	ResumeLimitReachedError,
 } from '../errors/resumes.errors.js';
 import type {
+	ListResumesFilter,
 	ResumeScores,
 	Resumes,
 	ResumesRepository,
@@ -86,8 +87,9 @@ export class ResumesService {
 	async listResumes(
 		userId: string,
 		pagination: Pagination,
+		filter: ListResumesFilter,
 	): Promise<PaginatedResult<ResumeWithScore>> {
-		const result = await this.resumesRepository.findAllByUser(userId, pagination);
+		const result = await this.resumesRepository.findAllByUser(userId, pagination, filter);
 		const data: ResumeWithScore[] = await Promise.all(
 			result.data.map(async (resume) => {
 				const score = await this.resumesRepository.findLatestScore(resume.id);

@@ -8,6 +8,7 @@ import {
 	uuid,
 	varchar,
 } from 'drizzle-orm/pg-core';
+import { aiModels } from './ai-models.schema.js';
 import { jobMatches } from './job-matches.schema.js';
 import { resumes } from './resumes.schema.js';
 import { user } from './user.schema.js';
@@ -25,6 +26,9 @@ export const chatSessions = pgTable(
 		jobMatchId: uuid('job_match_id').references(() => jobMatches.id, {
 			onDelete: 'set null',
 		}),
+		aiModelId: uuid('ai_model_id').references(() => aiModels.id, {
+			onDelete: 'set null',
+		}),
 		title: varchar('title', { length: 255 }),
 		isActive: boolean('is_active').default(true).notNull(),
 		createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
@@ -34,6 +38,14 @@ export const chatSessions = pgTable(
 	},
 	(t) => [index('chat_sessions_user_id_idx').on(t.userId)],
 );
+
+export type AttachmentMeta = {
+	type: 'image' | 'document';
+	url?: string | undefined;
+	base64?: string | undefined;
+	mimeType: string;
+	name?: string | undefined;
+};
 
 export const messages = pgTable(
 	'messages',
@@ -49,6 +61,7 @@ export const messages = pgTable(
 			original?: string;
 			suggested: string;
 		} | null>(),
+		attachments: jsonb('attachments').$type<AttachmentMeta[] | null>().default(null),
 		createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 	},
 	(t) => [index('messages_session_id_idx').on(t.sessionId)],

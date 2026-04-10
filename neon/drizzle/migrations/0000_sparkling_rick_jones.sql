@@ -1,5 +1,5 @@
 CREATE TYPE "public"."ai_action_status" AS ENUM('pending', 'running', 'completed', 'failed');--> statement-breakpoint
-CREATE TYPE "public"."ai_action_type" AS ENUM('analyze_resume', 'score_resume', 'match_job', 'improve_section', 'generate_export', 'suggest_keywords', 'rewrite_section');--> statement-breakpoint
+CREATE TYPE "public"."ai_action_type" AS ENUM('analyze_resume', 'score_resume', 'match_job', 'improve_section', 'generate_export', 'suggest_keywords', 'rewrite_section', 'web_search');--> statement-breakpoint
 CREATE TYPE "public"."export_document_type" AS ENUM('resume', 'resume_version', 'cover_letter');--> statement-breakpoint
 CREATE TYPE "public"."export_format" AS ENUM('pdf', 'docx', 'plain_text');--> statement-breakpoint
 CREATE TYPE "public"."export_language" AS ENUM('pt', 'en');--> statement-breakpoint
@@ -12,6 +12,19 @@ CREATE TYPE "public"."preferred_language" AS ENUM('pt', 'en');--> statement-brea
 CREATE TYPE "public"."user_plan" AS ENUM('free', 'pro', 'enterprise');--> statement-breakpoint
 CREATE TYPE "public"."work_model" AS ENUM('remote', 'hybrid', 'onsite', 'any');--> statement-breakpoint
 CREATE TYPE "public"."writing_tone" AS ENUM('formal', 'modern', 'creative', 'technical');--> statement-breakpoint
+CREATE TABLE "ai_models" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"model_id" text NOT NULL,
+	"name" text NOT NULL,
+	"provider" text NOT NULL,
+	"context_window" integer NOT NULL,
+	"is_default" boolean DEFAULT false NOT NULL,
+	"is_active" boolean DEFAULT true NOT NULL,
+	"supports_vision" boolean DEFAULT false NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "ai_models_model_id_unique" UNIQUE("model_id")
+);
+--> statement-breakpoint
 CREATE TABLE "ai_actions" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"user_id" uuid NOT NULL,
@@ -83,6 +96,7 @@ CREATE TABLE "chat_sessions" (
 	"user_id" uuid NOT NULL,
 	"resume_id" uuid,
 	"job_match_id" uuid,
+	"ai_model_id" uuid,
 	"title" varchar(255),
 	"is_active" boolean DEFAULT true NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
@@ -95,6 +109,7 @@ CREATE TABLE "messages" (
 	"role" varchar(16) NOT NULL,
 	"content" text NOT NULL,
 	"suggestion" jsonb,
+	"attachments" jsonb DEFAULT 'null'::jsonb,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
@@ -258,6 +273,7 @@ CREATE TABLE "user" (
 	"email" text NOT NULL,
 	"email_verified" boolean DEFAULT false NOT NULL,
 	"image" text,
+	"terms_accepted" boolean DEFAULT false NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "user_email_unique" UNIQUE("email")
@@ -321,6 +337,7 @@ ALTER TABLE "certifications" ADD CONSTRAINT "certifications_resume_id_resumes_id
 ALTER TABLE "chat_sessions" ADD CONSTRAINT "chat_sessions_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "chat_sessions" ADD CONSTRAINT "chat_sessions_resume_id_resumes_id_fk" FOREIGN KEY ("resume_id") REFERENCES "public"."resumes"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "chat_sessions" ADD CONSTRAINT "chat_sessions_job_match_id_job_matches_id_fk" FOREIGN KEY ("job_match_id") REFERENCES "public"."job_matches"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "chat_sessions" ADD CONSTRAINT "chat_sessions_ai_model_id_ai_models_id_fk" FOREIGN KEY ("ai_model_id") REFERENCES "public"."ai_models"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "messages" ADD CONSTRAINT "messages_session_id_chat_sessions_id_fk" FOREIGN KEY ("session_id") REFERENCES "public"."chat_sessions"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "cover_letters" ADD CONSTRAINT "cover_letters_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "cover_letters" ADD CONSTRAINT "cover_letters_base_resume_id_resumes_id_fk" FOREIGN KEY ("base_resume_id") REFERENCES "public"."resumes"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint

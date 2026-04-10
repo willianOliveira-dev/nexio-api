@@ -7,6 +7,7 @@ import {
 } from '@/shared/schemas/error-responses.schema.js';
 import type { AppEnv } from '@/shared/types/app-env.type.js';
 import { ResumesController } from '../controllers/resumes.controller.js';
+import { listResumesQuerySchema } from '../schemas/requests.schema.js';
 import {
 	downloadUrlResponseSchema,
 	paginatedResumesSchema,
@@ -81,9 +82,9 @@ resumesRoutes.openapi(
 		path: '/resumes',
 		operationId: 'listResumes',
 		tags: ['Resumes'],
-		summary: 'Lista os currículos do usuário autenticado com paginação',
+		summary: 'Lista os currículos do usuário autenticado com paginação, busca e filtros',
 		middleware: [authenticateMiddleware] as const,
-		request: { query: paginationQuerySchema },
+		request: { query: listResumesQuerySchema },
 		responses: {
 			200: {
 				description: 'Lista paginada de currículos',
@@ -94,8 +95,17 @@ resumesRoutes.openapi(
 	}),
 	async (c) => {
 		const { user } = c.get('session');
-		const { page, limit } = c.req.valid('query');
-		const result = await controller.listResumes(user.id, { page, limit });
+		const { page, limit, search, status, sortBy, sortOrder } = c.req.valid('query');
+		const result = await controller.listResumes(
+			user.id,
+			{ page, limit },
+			{
+				search,
+				status,
+				sortBy,
+				sortOrder,
+			},
+		);
 		return c.json(
 			{
 				data: result.data.map((r) => ({

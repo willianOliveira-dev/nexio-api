@@ -1,4 +1,5 @@
 export * from './ai-actions.schema.js';
+export * from './ai-models.schema.js';
 export * from './auth-schema.js';
 export * from './certifications.schema.js';
 export * from './chat.schema.js';

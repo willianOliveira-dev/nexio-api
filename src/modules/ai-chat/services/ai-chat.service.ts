@@ -1,6 +1,7 @@
-import { createGroq } from '@ai-sdk/groq';
-import { streamText } from 'ai';
-import { env } from '@/config/env.js';
+import { type AssistantContent, type ModelMessage, streamText, type UserContent } from 'ai';
+import { openRouterProvider } from '@/lib/ai/openrouter.provider.js';
+import { webSearchTool } from '@/lib/ai/tools/web-search.tool.js';
+import type { AttachmentMeta } from '@/lib/db/schemas/chat.schema.js';
 import type { ResumeContent } from '@/lib/db/schemas/resumes.schema.js';
 import { getBoss, SCORE_RECALCULATE_JOB } from '@/lib/queue/pg-boss.client.js';
 import type { JobMatchesRepository } from '@/modules/job-matches/repositories/job-matches.repository.js';
@@ -12,6 +13,7 @@ import { buildAiChatSystemPrompt } from '@/shared/prompts/ai-chat.prompt.js';
 import type { PaginatedResult, Pagination } from '@/shared/types/pagination.type.js';
 import type {
 	AiChatRepository,
+	AiModel,
 	ChatSessions,
 	Messages,
 } from '../repositories/ai-chat.repository.js';
@@ -52,12 +54,24 @@ export class AiChatService {
 			if (!jobMatch) throw new NotFoundError('Job Match');
 		}
 
+		let aiModelId: string | null = null;
+
+		if (data.modelId) {
+			const modelRow = await this.aiChatRepository.findModelByModelId(data.modelId);
+			if (!modelRow) throw new BadRequestError('Modelo de IA inválido ou indisponível.');
+			aiModelId = modelRow.id;
+		} else {
+			const defaultModel = await this.aiChatRepository.findDefaultModel();
+			if (defaultModel) aiModelId = defaultModel.id;
+		}
+
 		const title = `Chat com Nexio AI - ${resume.fileName}`;
 
 		return this.aiChatRepository.createSession({
 			userId,
 			resumeId: data.resumeId,
 			jobMatchId: data.jobMatchId ?? null,
+			aiModelId,
 			title,
 			isActive: true,
 		});
@@ -87,7 +101,12 @@ export class AiChatService {
 		return this.aiChatRepository.findSessionsByUser(userId, pagination);
 	}
 
-	async sendMessageStream(sessionId: string, userId: string, content: string): Promise<Response> {
+	async sendMessageStream(
+		sessionId: string,
+		userId: string,
+		content: string,
+		attachments?: AttachmentMeta[], // Adicionado attachments
+	): Promise<Response> {
 		const session = await this.aiChatRepository.findSessionById(sessionId, userId);
 		if (!session) throw new NotFoundError('Sessão de chat');
 
@@ -98,29 +117,94 @@ export class AiChatService {
 		const creditsRemaining = await this.usersRepository.getCreditsRemaining(userId);
 		if (creditsRemaining <= 0) throw new PaymentRequiredError('Créditos de IA esgotados');
 
+		const modelRow = session.aiModelId
+			? await this.aiChatRepository.findModelById(session.aiModelId)
+			: await this.aiChatRepository.findDefaultModel();
+
+		if (!modelRow) throw new NotFoundError('Modelo de IA');
+
+		// Validar suporte a visão se possuir imagens
+		if (attachments?.some((a) => a.type === 'image') && !modelRow.supportsVision) {
+			throw new BadRequestError(`O modelo selecionado (${modelRow.name}) não suporta imagens.`);
+		}
+
+		// Filtrar payload base64 antes de salvar no DB
+		const dbAttachments = attachments?.map((att) => {
+			if (att.base64) {
+				const { base64, ...rest } = att;
+				return rest; // Salva apenas os metadados, despreza o peso do base64 no Postgres
+			}
+			return att;
+		});
+
 		await this.aiChatRepository.createMessage({
 			sessionId,
 			role: 'user',
 			content,
+			attachments: dbAttachments && dbAttachments.length > 0 ? dbAttachments : null,
 		});
 
 		const systemPrompt = await this.buildSystemPrompt(session, userId);
-		const history = await this.aiChatRepository.findAllMessagesBySession(sessionId);
 
-		const chatMessages: { role: 'user' | 'assistant'; content: string }[] = history.map((m) => ({
-			role: m.role as 'user' | 'assistant',
-			content: m.content,
-		}));
+		// Recarrega o history, porém o último será anexado artificialmente para ter os base64 na Vercel
+		const historyFromDb = await this.aiChatRepository.findAllMessagesBySession(sessionId);
+
+		const chatMessages: ModelMessage[] = historyFromDb.map((m, index) => {
+			const isLast = index === historyFromDb.length - 1;
+			const attsToUse = isLast && attachments ? attachments : m.attachments;
+
+			if (attsToUse && attsToUse.length > 0) {
+				if (m.role === 'user') {
+					const userContent: UserContent = [
+						{ type: 'text', text: m.content },
+						...attsToUse.map((att) => {
+							if (att.type === 'image') {
+								return {
+									type: 'image' as const,
+									image: new URL(att.url ?? att.base64 ?? ''),
+									mediaType: att.mimeType,
+								};
+							}
+							return {
+								type: 'file' as const,
+								data: new URL(att.url ?? att.base64 ?? ''),
+								mediaType: att.mimeType,
+							};
+						}),
+					];
+					return { role: 'user', content: userContent };
+				}
+
+				const assistantContent: AssistantContent = [
+					{ type: 'text', text: m.content },
+					...attsToUse
+						.filter((att) => att.type === 'document')
+						.map((att) => ({
+							type: 'file' as const,
+							data: new URL(att.url ?? att.base64 ?? ''),
+							mediaType: att.mimeType,
+						})),
+				];
+				return { role: 'assistant', content: assistantContent };
+			}
+
+			if (m.role === 'user') {
+				return { role: 'user', content: m.content };
+			}
+			return { role: 'assistant', content: m.content };
+		});
 
 		const startTime = Date.now();
-		const groqProvider = createGroq({ apiKey: env.GROQ_API_KEY });
 
 		const result = streamText({
-			model: groqProvider('llama-3.3-70b-versatile'),
+			model: openRouterProvider(modelRow.modelId),
 			system: systemPrompt,
 			temperature: 0.6,
 			maxOutputTokens: 2048,
 			messages: chatMessages,
+			tools: {
+				webSearch: webSearchTool,
+			},
 			onFinish: async (event) => {
 				const durationMs = Date.now() - startTime;
 
@@ -213,6 +297,10 @@ export class AiChatService {
 		};
 	}
 
+	async listModels(): Promise<AiModel[]> {
+		return this.aiChatRepository.findAllActiveModels();
+	}
+
 	async closeSession(id: string, userId: string): Promise<void> {
 		const session = await this.aiChatRepository.findSessionById(id, userId);
 		if (!session) throw new NotFoundError('Sessão de chat');
@@ -246,7 +334,7 @@ export class AiChatService {
 				for (const s of skillRows) {
 					const cat = s.category ?? 'Geral';
 					if (!skillsByCategory[cat]) skillsByCategory[cat] = [];
-					skillsByCategory[cat]!.push(s.name);
+					skillsByCategory[cat]?.push(s.name);
 				}
 
 				const fullResumeData = {
@@ -298,7 +386,7 @@ export class AiChatService {
 						| null;
 					if (improvementsList?.length) {
 						improvements = improvementsList
-							.map((i) => '- [' + i.priority.toUpperCase() + '] ' + i.description)
+							.map((i) => `- [${i.priority.toUpperCase()}] ${i.description}`)
 							.join('\n');
 					}
 					const mkList = score.missingKeywords as string[] | null;
@@ -322,8 +410,8 @@ export class AiChatService {
 						}),
 					);
 
-					resumeContent += '\n\nOTHER RESUMES FROM THIS USER (' + otherResumes.length + '):';
-					resumeContent += '\n' + JSON.stringify(otherScores, null, 2);
+					resumeContent += `\n\nOTHER RESUMES FROM THIS USER (${otherResumes.length}):`;
+					resumeContent += `\n${JSON.stringify(otherScores, null, 2)}`;
 				}
 			}
 		}
@@ -340,15 +428,15 @@ export class AiChatService {
 						difficulty: string;
 					}[]) ?? [];
 
-				let ctx = 'Job Title: ' + (jobMatch.jobTitle ?? 'N/A');
-				ctx += '\nJob Description:\n' + jobMatch.jobDescription;
-				ctx += '\nMatch Score: ' + jobMatch.matchScore + '/100';
-				ctx += '\nFound Keywords: ' + fk.join(', ');
-				ctx += '\nMissing Keywords: ' + mk.join(', ');
+				let ctx = `Job Title: ${jobMatch.jobTitle ?? 'N/A'}`;
+				ctx += `\nJob Description:\n${jobMatch.jobDescription}`;
+				ctx += `\nMatch Score: ${jobMatch.matchScore}/100`;
+				ctx += `\nFound Keywords: ${fk.join(', ')}`;
+				ctx += `\nMissing Keywords: ${mk.join(', ')}`;
 				if (recs.length > 0) {
 					ctx += '\nRecommendations:';
 					for (const r of recs) {
-						ctx += '\n  - [' + r.difficulty.toUpperCase() + '] ' + r.title + ': ' + r.description;
+						ctx += `\n  - [${r.difficulty.toUpperCase()}] ${r.title}: ${r.description}`;
 					}
 				}
 				jobMatchContext = ctx;

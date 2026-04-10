@@ -2,7 +2,7 @@ import { JobMatchesRepository } from '@/modules/job-matches/repositories/job-mat
 import { ResumesRepository } from '@/modules/resumes/repositories/resumes.repository.js';
 import { UsersRepository } from '@/modules/users/repositories/users.repository.js';
 import type { PaginatedResult, Pagination } from '@/shared/types/pagination.type.js';
-import type { ChatSessions } from '../repositories/ai-chat.repository.js';
+import type { AiModel, ChatSessions } from '../repositories/ai-chat.repository.js';
 import { AiChatRepository } from '../repositories/ai-chat.repository.js';
 import type { ApplySuggestionDTO } from '../schemas/apply-suggestion.dto.js';
 import type { CreateSessionDTO } from '../schemas/create-session.dto.js';
@@ -36,7 +36,7 @@ export class AiChatController {
 	sendMessage(sessionId: string, userId: string, payload: SendMessageDTO): Promise<Response> {
 		const content = payload.content || payload.messages?.[payload.messages.length - 1]?.content;
 		if (!content) throw new Error('Content is required');
-		return this.service.sendMessageStream(sessionId, userId, content);
+		return this.service.sendMessageStream(sessionId, userId, content, payload.attachments);
 	}
 
 	applySuggestion(sessionId: string, userId: string, data: ApplySuggestionDTO) {
@@ -45,5 +45,9 @@ export class AiChatController {
 
 	closeSession(id: string, userId: string): Promise<void> {
 		return this.service.closeSession(id, userId);
+	}
+
+	listModels(): Promise<AiModel[]> {
+		return this.service.listModels();
 	}
 }

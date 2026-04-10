@@ -1,6 +1,7 @@
 import { and, asc, count, desc, eq } from 'drizzle-orm';
 import { db } from '@/lib/db/connection.js';
 import type {
+	AiModel,
 	ChatSessions,
 	Educations,
 	Languages,
@@ -160,6 +161,38 @@ export class AiChatRepository {
 			.limit(1);
 		return score ?? null;
 	}
+	async findAllActiveModels(): Promise<AiModel[]> {
+		return db
+			.select()
+			.from(schema.aiModels)
+			.where(eq(schema.aiModels.isActive, true))
+			.orderBy(desc(schema.aiModels.isDefault), asc(schema.aiModels.name));
+	}
+
+	async findModelById(id: string): Promise<AiModel | null> {
+		const [model] = await db
+			.select()
+			.from(schema.aiModels)
+			.where(and(eq(schema.aiModels.id, id), eq(schema.aiModels.isActive, true)));
+		return model ?? null;
+	}
+
+	async findModelByModelId(modelId: string): Promise<AiModel | null> {
+		const [model] = await db
+			.select()
+			.from(schema.aiModels)
+			.where(and(eq(schema.aiModels.modelId, modelId), eq(schema.aiModels.isActive, true)));
+		return model ?? null;
+	}
+
+	async findDefaultModel(): Promise<AiModel | null> {
+		const [model] = await db
+			.select()
+			.from(schema.aiModels)
+			.where(and(eq(schema.aiModels.isDefault, true), eq(schema.aiModels.isActive, true)))
+			.limit(1);
+		return model ?? null;
+	}
 }
 
-export type { ChatSessions, Messages };
+export type { AiModel, ChatSessions, Messages };

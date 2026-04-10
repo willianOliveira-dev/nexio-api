@@ -25,6 +25,53 @@ const paginationQuerySchema = z.object({
 	limit: z.coerce.number().int().min(1).max(100).default(20),
 });
 
+const aiModelResponseSchema = z.object({
+	id: z.string().uuid(),
+	modelId: z.string(),
+	name: z.string(),
+	provider: z.string(),
+	contextWindow: z.number().int(),
+	isDefault: z.boolean(),
+});
+
+aiChatRoutes.openapi(
+	createRoute({
+		method: 'get',
+		path: '/ai-chat/models',
+		operationId: 'listAiModels',
+		tags: ['AI Chat'],
+		summary: 'Lista os modelos de IA disponíveis',
+		middleware: [authenticateMiddleware],
+		responses: {
+			200: {
+				description: 'Lista de modelos disponíveis',
+				content: {
+					'application/json': {
+						schema: z.object({ data: z.array(aiModelResponseSchema) }),
+					},
+				},
+			},
+			...standardAuthErrors,
+		},
+	}),
+	async (c) => {
+		const models = await controller.listModels();
+		return c.json(
+			{
+				data: models.map((m) => ({
+					id: m.id,
+					modelId: m.modelId,
+					name: m.name,
+					provider: m.provider,
+					contextWindow: m.contextWindow,
+					isDefault: m.isDefault,
+				})),
+			},
+			200,
+		);
+	},
+);
+
 aiChatRoutes.openapi(
 	createRoute({
 		method: 'post',

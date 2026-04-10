@@ -15,7 +15,10 @@ const envSchema = z.object({
 	BETTER_AUTH_SECRET: z.string(),
 	BETTER_AUTH_URL: z.string(),
 
-	GROQ_API_KEY: z.string(),
+	OPENROUTER_API_KEY: z.string(),
+	TAVILY_API_KEY: z.string().optional(),
+	APP_URL: z.string().default('http://localhost:8000'),
+	APP_NAME: z.string().default('Nexio'),
 
 	GOOGLE_CLIENT_ID: z.string(),
 	GOOGLE_CLIENT_SECRET: z.string(),

@@ -37,6 +37,15 @@ export const auth = betterAuth({
 	databaseHooks: {
 		user: {
 			create: {
+				before: async (_user, ctx) => {
+					if (ctx?.path?.includes('/callback/')) {
+						return {
+							data: {
+								termsAccepted: true,
+							},
+						};
+					}
+				},
 				after: async (user) => {
 					await db.insert(schema.userProfiles).values({
 						userId: user.id,

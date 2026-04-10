@@ -1,5 +1,5 @@
 import { asc, eq } from 'drizzle-orm';
-import { groq } from '@/lib/ai/groq.client.js';
+import { openRouterClient } from '@/lib/ai/openrouter.provider.js';
 import { db } from '@/lib/db/connection.js';
 import * as schema from '@/lib/db/schemas/index.schema.js';
 import type { JobMatchesRepository } from '@/modules/job-matches/repositories/job-matches.repository.js';
@@ -79,7 +79,7 @@ export class CoverLettersService {
 			preferredLanguage: profile?.preferredLanguage ?? 'pt-BR',
 		};
 
-		const content = await this.callGroq(
+		const content = await this.generateWithAi(
 			jobMatch?.jobTitle && jobMatch?.jobDescription
 				? {
 						...contextData,
@@ -135,7 +135,7 @@ export class CoverLettersService {
 		await this.coverLettersRepository.delete(id, userId);
 	}
 
-	private async callGroq(context: {
+	private async generateWithAi(context: {
 		fullName: string;
 		professionalSummary: string;
 		workExperiences: { title: string; company: string }[];
@@ -147,8 +147,8 @@ export class CoverLettersService {
 	}): Promise<string> {
 		const systemPrompt = buildCoverLetterSystemPrompt(context);
 
-		const completion = await groq.chat.completions.create({
-			model: 'llama-3.3-70b-versatile',
+		const completion = await openRouterClient.chat.completions.create({
+			model: 'meta-llama/llama-3.3-70b-instruct:free',
 			temperature: 0.7,
 			messages: [{ role: 'system', content: systemPrompt }],
 		});
