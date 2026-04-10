@@ -10,6 +10,7 @@ import type { UsersRepository } from '@/modules/users/repositories/users.reposit
 import { BadRequestError, NotFoundError, PaymentRequiredError } from '@/shared/errors/app.error.js';
 import type { AiChatPromptContext } from '@/shared/prompts/ai-chat.prompt.js';
 import { buildAiChatSystemPrompt } from '@/shared/prompts/ai-chat.prompt.js';
+import { buildResumeBuilderPrompt } from '@/shared/prompts/resume-builder.prompt.js';
 import type { PaginatedResult, Pagination } from '@/shared/types/pagination.type.js';
 import type {
 	AiChatRepository,
@@ -73,6 +74,29 @@ export class AiChatService {
 			jobMatchId: data.jobMatchId ?? null,
 			aiModelId,
 			title,
+			isActive: true,
+		});
+	}
+
+	async createBuilderSession(userId: string, modelId?: string): Promise<ChatSessions> {
+		let aiModelId: string | null = null;
+
+		if (modelId) {
+			const modelRow = await this.aiChatRepository.findModelByModelId(modelId);
+			if (!modelRow) throw new BadRequestError('Modelo de IA inválido ou indisponível.');
+			aiModelId = modelRow.id;
+		} else {
+			const defaultModel = await this.aiChatRepository.findDefaultModel();
+			if (defaultModel) aiModelId = defaultModel.id;
+		}
+
+		return this.aiChatRepository.createSession({
+			userId,
+			resumeId: null,
+			jobMatchId: null,
+			aiModelId,
+			title: 'Criador de Currículos AI',
+			isBuilder: true,
 			isActive: true,
 		});
 	}
@@ -224,7 +248,11 @@ export class AiChatService {
 					userId,
 					sessionId,
 					resumeId: session.resumeId,
-					type: suggestion ? 'rewrite_section' : 'improve_section',
+					type: session.isBuilder
+						? 'create_resume_ai'
+						: suggestion
+							? 'rewrite_section'
+							: 'improve_section',
 					status: 'completed',
 					inputTokens: event.usage.inputTokens ?? 0,
 					outputTokens: event.usage.outputTokens ?? 0,
@@ -247,10 +275,14 @@ export class AiChatService {
 		version: { id: string; title: string; createdAt: string };
 	}> {
 		const session = await this.aiChatRepository.findSessionById(sessionId, userId);
-		if (!session) throw new NotFoundError('Sessão de chat');
+		if (!session) throw new NotFoundError('Sessao de chat');
+
+		if (session.isBuilder) {
+			return this.applyBuilderSuggestion(sessionId, userId, data);
+		}
 
 		if (!session.resumeId) {
-			throw new BadRequestError('Esta sessão não possui um currículo associado.');
+			throw new BadRequestError('Esta sessao nao possui um curriculo associado.');
 		}
 
 		const resume = await this.resumesRepository.findById(session.resumeId, userId);
@@ -297,6 +329,28 @@ export class AiChatService {
 		};
 	}
 
+	private async applyBuilderSuggestion(
+		_sessionId: string,
+		_userId: string,
+		data: ApplySuggestionDTO,
+	): Promise<{
+		resume: { id: string; updatedField: string; updatedValue: string };
+		version: { id: string; title: string; createdAt: string };
+	}> {
+		return {
+			resume: {
+				id: '',
+				updatedField: data.suggestion.section,
+				updatedValue: data.suggestion.suggested,
+			},
+			version: {
+				id: '',
+				title: 'Builder suggestion',
+				createdAt: new Date().toISOString(),
+			},
+		};
+	}
+
 	async listModels(): Promise<AiModel[]> {
 		return this.aiChatRepository.findAllActiveModels();
 	}
@@ -308,6 +362,9 @@ export class AiChatService {
 	}
 
 	private async buildSystemPrompt(session: ChatSessions, userId: string): Promise<string> {
+		if (session.isBuilder) {
+			return buildResumeBuilderPrompt({ preferredLanguage: 'pt-BR' });
+		}
 		let resumeContent = '{}';
 		let overall = 0;
 		let impact = 0;

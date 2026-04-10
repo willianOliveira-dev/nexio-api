@@ -30,6 +30,7 @@ export const chatSessions = pgTable(
 			onDelete: 'set null',
 		}),
 		title: varchar('title', { length: 255 }),
+		isBuilder: boolean('is_builder').default(false).notNull(),
 		isActive: boolean('is_active').default(true).notNull(),
 		createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 		updatedAt: timestamp('updated_at', { withTimezone: true })

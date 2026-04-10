@@ -25,13 +25,23 @@ const paginationQuerySchema = z.object({
 	limit: z.coerce.number().int().min(1).max(100).default(20),
 });
 
+const builderSessionResponseSchema = z.object({
+	sessionId: z.string().uuid(),
+	title: z.string(),
+	isActive: z.boolean(),
+	isBuilder: z.boolean(),
+	createdAt: z.string().datetime(),
+});
+
 const aiModelResponseSchema = z.object({
 	id: z.string().uuid(),
 	modelId: z.string(),
 	name: z.string(),
+	description: z.string().nullable(),
 	provider: z.string(),
 	contextWindow: z.number().int(),
 	isDefault: z.boolean(),
+	supportsVision: z.boolean(),
 });
 
 aiChatRoutes.openapi(
@@ -62,9 +72,11 @@ aiChatRoutes.openapi(
 					id: m.id,
 					modelId: m.modelId,
 					name: m.name,
+					description: m.description ?? null,
 					provider: m.provider,
 					contextWindow: m.contextWindow,
 					isDefault: m.isDefault,
+					supportsVision: m.supportsVision,
 				})),
 			},
 			200,
@@ -297,5 +309,48 @@ aiChatRoutes.openapi(
 		const { id } = c.req.valid('param');
 		await controller.closeSession(id, user.id);
 		return c.json({ isActive: false }, 200);
+	},
+);
+
+aiChatRoutes.openapi(
+	createRoute({
+		method: 'post',
+		path: '/ai-chat/builder-sessions',
+		operationId: 'createBuilderSession',
+		tags: ['AI Chat'],
+		summary: 'Cria uma sessão de builder AI para montar currículo do zero',
+		middleware: [authenticateMiddleware],
+		request: {
+			body: {
+				required: false,
+				content: {
+					'application/json': {
+						schema: z.object({ modelId: z.string().optional() }).optional(),
+					},
+				},
+			},
+		},
+		responses: {
+			201: {
+				description: 'Sessão de builder criada',
+				content: { 'application/json': { schema: builderSessionResponseSchema } },
+			},
+			...standardAuthErrors,
+		},
+	}),
+	async (c) => {
+		const { user } = c.get('session');
+		const body = await c.req.json().catch(() => ({}));
+		const session = await controller.createBuilderSession(user.id, body.modelId);
+		return c.json(
+			{
+				sessionId: session.id,
+				title: session.title ?? 'Criador de Currículos AI',
+				isActive: session.isActive,
+				isBuilder: true,
+				createdAt: session.createdAt.toISOString(),
+			},
+			201,
+		);
 	},
 );

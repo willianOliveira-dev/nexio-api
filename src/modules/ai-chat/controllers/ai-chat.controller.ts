@@ -50,4 +50,8 @@ export class AiChatController {
 	listModels(): Promise<AiModel[]> {
 		return this.service.listModels();
 	}
+
+	createBuilderSession(userId: string, modelId?: string): Promise<ChatSessions> {
+		return this.service.createBuilderSession(userId, modelId);
+	}
 }

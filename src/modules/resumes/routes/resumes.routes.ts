@@ -6,10 +6,17 @@ import {
 	standardAuthErrors,
 } from '@/shared/schemas/error-responses.schema.js';
 import type { AppEnv } from '@/shared/types/app-env.type.js';
+import { ResumeBuilderController } from '../controllers/resume-builder.controller.js';
 import { ResumesController } from '../controllers/resumes.controller.js';
+import {
+	createResumeAiBodySchema,
+	finalizeResumeAiBodySchema,
+} from '../schemas/create-resume-ai.dto.js';
 import { listResumesQuerySchema } from '../schemas/requests.schema.js';
 import {
+	builderSessionResponseSchema,
 	downloadUrlResponseSchema,
+	finalizeResumeResponseSchema,
 	paginatedResumesSchema,
 	paginatedVersionsSchema,
 	reanalyzeResponseSchema,
@@ -386,6 +393,131 @@ resumesRoutes.openapi(
 				updatedAt: version.updatedAt.toISOString(),
 			},
 			200,
+		);
+	},
+);
+
+const builderController = new ResumeBuilderController();
+
+resumesRoutes.openapi(
+	createRoute({
+		method: 'post',
+		path: '/resumes/ai-create',
+		operationId: 'createResumeWithAi',
+		tags: ['Resumes'],
+		summary: 'Cria uma sessão de builder AI para montar currículo do zero via conversa',
+		middleware: [authenticateMiddleware] as const,
+		request: {
+			body: {
+				required: false,
+				content: { 'application/json': { schema: createResumeAiBodySchema.optional() } },
+			},
+		},
+		responses: {
+			201: {
+				description: 'Sessão de builder criada',
+				content: { 'application/json': { schema: builderSessionResponseSchema } },
+			},
+			402: createAppErrorResponse('Créditos de IA esgotados'),
+			403: createAppErrorResponse('Limite de currículos do plano atingido'),
+			...standardAuthErrors,
+		},
+	}),
+	async (c) => {
+		const { user } = c.get('session');
+		const body = await c.req.json().catch(() => ({}));
+		const session = await builderController.createBuilderSession(user.id, body);
+		return c.json(
+			{
+				sessionId: session.id,
+				resumeId: '',
+				title: session.title ?? 'Criador de Currículos AI',
+				isActive: session.isActive,
+				createdAt: session.createdAt.toISOString(),
+			},
+			201,
+		);
+	},
+);
+
+resumesRoutes.openapi(
+	createRoute({
+		method: 'get',
+		path: '/resumes/ai-create/:sessionId',
+		operationId: 'getBuilderSession',
+		tags: ['Resumes'],
+		summary: 'Obtém detalhes de uma sessão de builder AI',
+		middleware: [authenticateMiddleware] as const,
+		request: { params: z.object({ sessionId: z.string().uuid() }) },
+		responses: {
+			200: {
+				description: 'Detalhes da sessão de builder',
+				content: { 'application/json': { schema: builderSessionResponseSchema } },
+			},
+			404: createAppErrorResponse('Sessão de builder não encontrada'),
+			...standardAuthErrors,
+		},
+	}),
+	async (c) => {
+		const { user } = c.get('session');
+		const { sessionId } = c.req.valid('param');
+		const session = await builderController.getBuilderSession(sessionId, user.id);
+		return c.json(
+			{
+				sessionId: session.id,
+				resumeId: '',
+				title: session.title ?? 'Criador de Currículos AI',
+				isActive: session.isActive,
+				createdAt: session.createdAt.toISOString(),
+			},
+			200,
+		);
+	},
+);
+
+resumesRoutes.openapi(
+	createRoute({
+		method: 'post',
+		path: '/resumes/ai-create/:sessionId/finalize',
+		operationId: 'finalizeResumeWithAi',
+		tags: ['Resumes'],
+		summary: 'Finaliza a sessão de builder e gera o currículo completo',
+		middleware: [authenticateMiddleware] as const,
+		request: {
+			params: z.object({ sessionId: z.string().uuid() }),
+			body: {
+				required: false,
+				content: {
+					'application/json': { schema: finalizeResumeAiBodySchema.optional() },
+				},
+			},
+		},
+		responses: {
+			201: {
+				description: 'Currículo criado com sucesso',
+				content: { 'application/json': { schema: finalizeResumeResponseSchema } },
+			},
+			400: createValidationErrorResponse('Dados incompletos ou inválidos'),
+			404: createAppErrorResponse('Sessão de builder não encontrada'),
+			...standardAuthErrors,
+		},
+	}),
+	async (c) => {
+		const { user } = c.get('session');
+		const { sessionId } = c.req.valid('param');
+		const body = await c.req.json().catch(() => ({}));
+		const result = await builderController.finalizeBuilder(sessionId, user.id, body);
+		return c.json(
+			{
+				id: result.resume.id,
+				fileName: result.resume.fileName,
+				status: result.resume.status,
+				fullName: result.resume.fullName,
+				email: result.resume.email,
+				score: null,
+				createdAt: result.resume.createdAt.toISOString(),
+			},
+			201,
 		);
 	},
 );

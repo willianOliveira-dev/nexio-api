@@ -145,3 +145,21 @@ export const versionDetailSchema = z.object({
 	createdAt: z.string().datetime(),
 	updatedAt: z.string().datetime(),
 });
+
+export const builderSessionResponseSchema = z.object({
+	sessionId: z.string().uuid(),
+	resumeId: z.string().uuid(),
+	title: z.string(),
+	isActive: z.boolean(),
+	createdAt: z.string().datetime(),
+});
+
+export const finalizeResumeResponseSchema = z.object({
+	id: z.string().uuid(),
+	fileName: z.string(),
+	status: resumeStatusSchema,
+	fullName: z.string().nullable(),
+	email: z.string().nullable(),
+	score: scoreCompactSchema.nullable(),
+	createdAt: z.string().datetime(),
+});

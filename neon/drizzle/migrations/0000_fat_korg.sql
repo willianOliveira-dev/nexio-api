@@ -1,5 +1,5 @@
 CREATE TYPE "public"."ai_action_status" AS ENUM('pending', 'running', 'completed', 'failed');--> statement-breakpoint
-CREATE TYPE "public"."ai_action_type" AS ENUM('analyze_resume', 'score_resume', 'match_job', 'improve_section', 'generate_export', 'suggest_keywords', 'rewrite_section', 'web_search');--> statement-breakpoint
+CREATE TYPE "public"."ai_action_type" AS ENUM('analyze_resume', 'score_resume', 'match_job', 'improve_section', 'generate_export', 'suggest_keywords', 'rewrite_section', 'web_search', 'create_resume_ai');--> statement-breakpoint
 CREATE TYPE "public"."export_document_type" AS ENUM('resume', 'resume_version', 'cover_letter');--> statement-breakpoint
 CREATE TYPE "public"."export_format" AS ENUM('pdf', 'docx', 'plain_text');--> statement-breakpoint
 CREATE TYPE "public"."export_language" AS ENUM('pt', 'en');--> statement-breakpoint
@@ -12,19 +12,6 @@ CREATE TYPE "public"."preferred_language" AS ENUM('pt', 'en');--> statement-brea
 CREATE TYPE "public"."user_plan" AS ENUM('free', 'pro', 'enterprise');--> statement-breakpoint
 CREATE TYPE "public"."work_model" AS ENUM('remote', 'hybrid', 'onsite', 'any');--> statement-breakpoint
 CREATE TYPE "public"."writing_tone" AS ENUM('formal', 'modern', 'creative', 'technical');--> statement-breakpoint
-CREATE TABLE "ai_models" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"model_id" text NOT NULL,
-	"name" text NOT NULL,
-	"provider" text NOT NULL,
-	"context_window" integer NOT NULL,
-	"is_default" boolean DEFAULT false NOT NULL,
-	"is_active" boolean DEFAULT true NOT NULL,
-	"supports_vision" boolean DEFAULT false NOT NULL,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	CONSTRAINT "ai_models_model_id_unique" UNIQUE("model_id")
-);
---> statement-breakpoint
 CREATE TABLE "ai_actions" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"user_id" uuid NOT NULL,
@@ -39,6 +26,20 @@ CREATE TABLE "ai_actions" (
 	"error_message" text,
 	"duration_ms" integer,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "ai_models" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"model_id" text NOT NULL,
+	"name" text NOT NULL,
+	"description" text,
+	"provider" text NOT NULL,
+	"context_window" integer NOT NULL,
+	"is_default" boolean DEFAULT false NOT NULL,
+	"is_active" boolean DEFAULT true NOT NULL,
+	"supports_vision" boolean DEFAULT false NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "ai_models_model_id_unique" UNIQUE("model_id")
 );
 --> statement-breakpoint
 CREATE TABLE "account" (
@@ -98,6 +99,7 @@ CREATE TABLE "chat_sessions" (
 	"job_match_id" uuid,
 	"ai_model_id" uuid,
 	"title" varchar(255),
+	"is_builder" boolean DEFAULT false NOT NULL,
 	"is_active" boolean DEFAULT true NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone NOT NULL

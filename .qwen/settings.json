@@ -7,7 +7,11 @@
   "mcpServers": {
     "vitest": {
       "command": "npx",
-      "args": ["-y", "@djankies/vitest-mcp"]
+      "args": [
+        "-y",
+        "@djankies/vitest-mcp"
+      ]
     }
-  }
+  },
+  "$version": 3
 }

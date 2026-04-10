@@ -12,6 +12,7 @@ export const aiActionTypeEnum = pgEnum('ai_action_type', [
 	'suggest_keywords',
 	'rewrite_section',
 	'web_search',
+	'create_resume_ai',
 ]);
 
 export const aiActionStatusEnum = pgEnum('ai_action_status', [

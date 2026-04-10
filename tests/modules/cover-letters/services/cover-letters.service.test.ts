@@ -28,8 +28,7 @@ vi.mock(import('@/shared/prompts/cover-letter.prompt.js'), () => ({
 	buildCoverLetterSystemPrompt: vi.fn(() => 'mock-system-prompt'),
 }));
 
-import { openRouterClient } from '@/lib/ai/openrouter.provider.js';
-import type { JobMatches, Resumes, UserProfiles } from '@/lib/db/schemas/index.schema.js';
+import type { Resumes, UserProfiles } from '@/lib/db/schemas/index.schema.js';
 import type {
 	CoverLetters,
 	CoverLettersRepository,
@@ -45,8 +44,6 @@ import {
 	PaymentRequiredError,
 } from '@/shared/errors/app.error.js';
 import type { PaginatedResult } from '@/shared/types/pagination.type.js';
-
-const mockCreateCompletion = vi.mocked(openRouterClient.chat.completions.create);
 
 function makeResume(partial: Partial<Resumes> = {}): Resumes {
 	return {
@@ -91,22 +88,6 @@ function makeProfile(partial: Partial<UserProfiles> = {}): UserProfiles {
 		aiCreditsUsed: 0,
 		createdAt: new Date(),
 		updatedAt: new Date(),
-		...partial,
-	};
-}
-
-function makeJobMatch(partial: Partial<JobMatches> = {}): JobMatches {
-	return {
-		id: 'job-match-id-1',
-		userId: 'user-id-1',
-		resumeId: 'resume-id-1',
-		jobTitle: 'Software Engineer',
-		jobDescription: 'We need a TS dev',
-		matchScore: 85,
-		foundKeywords: [],
-		missingKeywords: [],
-		recommendations: [],
-		createdAt: new Date(),
 		...partial,
 	};
 }

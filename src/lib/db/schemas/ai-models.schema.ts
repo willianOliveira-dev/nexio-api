@@ -4,6 +4,7 @@ export const aiModels = pgTable('ai_models', {
 	id: uuid('id').primaryKey().defaultRandom(),
 	modelId: text('model_id').notNull().unique(),
 	name: text('name').notNull(),
+	description: text('description'),
 	provider: text('provider').notNull(),
 	contextWindow: integer('context_window').notNull(),
 	isDefault: boolean('is_default').notNull().default(false),
