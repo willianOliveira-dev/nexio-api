@@ -1,0 +1,9 @@
+{
+  "safety": {
+    "allowedPaths": ["./src"]
+  },
+  "testDefaults": {
+    "format": "detailed",
+    "timeout": 30000
+  }
+}

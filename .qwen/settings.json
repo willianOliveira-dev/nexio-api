@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch"
+    ]
+  },
+  "mcpServers": {
+    "vitest": {
+      "command": "npx",
+      "args": ["-y", "@djankies/vitest-mcp"]
+    }
+  }
+}
