@@ -118,6 +118,7 @@ aiChatRoutes.openapi(
 				resumeId: session.resumeId,
 				jobMatchId: session.jobMatchId ?? null,
 				title: session.title,
+				isBuilder: session.isBuilder,
 				isActive: session.isActive,
 				messages: [],
 				createdAt: session.createdAt.toISOString(),
@@ -156,6 +157,7 @@ aiChatRoutes.openapi(
 					resumeId: s.resumeId,
 					jobMatchId: s.jobMatchId ?? null,
 					title: s.title,
+					isBuilder: s.isBuilder,
 					isActive: s.isActive,
 					createdAt: s.createdAt.toISOString(),
 					updatedAt: s.updatedAt.toISOString(),
@@ -199,6 +201,7 @@ aiChatRoutes.openapi(
 				resumeId: session.resumeId,
 				jobMatchId: session.jobMatchId ?? null,
 				title: session.title,
+				isBuilder: session.isBuilder,
 				isActive: session.isActive,
 				messages: session.messages.map((m) => ({
 					id: m.id,
