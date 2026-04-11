@@ -35,8 +35,14 @@ export class AiChatController {
 
 	sendMessage(sessionId: string, userId: string, payload: SendMessageDTO): Promise<Response> {
 		const content = payload.content || payload.messages?.[payload.messages.length - 1]?.content;
-		if (!content) throw new Error('Content is required');
-		return this.service.sendMessageStream(sessionId, userId, content, payload.attachments);
+		if (!content) throw new Error('Conteúdo é obrigatório');
+		return this.service.sendMessageStream(
+			sessionId,
+			userId,
+			content,
+			payload.attachments,
+			payload.aiModelId,
+		);
 	}
 
 	applySuggestion(sessionId: string, userId: string, data: ApplySuggestionDTO) {
@@ -53,5 +59,9 @@ export class AiChatController {
 
 	createBuilderSession(userId: string, modelId?: string): Promise<ChatSessions> {
 		return this.service.createBuilderSession(userId, modelId);
+	}
+
+	deleteSession(id: string, userId: string): Promise<void> {
+		return this.service.deleteSession(id, userId);
 	}
 }

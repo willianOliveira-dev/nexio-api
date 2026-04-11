@@ -357,3 +357,28 @@ aiChatRoutes.openapi(
 		);
 	},
 );
+
+aiChatRoutes.openapi(
+	createRoute({
+		method: 'delete',
+		path: '/ai-chat/sessions/:id',
+		operationId: 'deleteChatSession',
+		tags: ['AI Chat'],
+		summary: 'Deleta uma sessão de chat e todas as suas mensagens',
+		middleware: [authenticateMiddleware],
+		request: {
+			params: z.object({ id: z.string().uuid() }),
+		},
+		responses: {
+			204: { description: 'Sessão deletada com sucesso' },
+			404: createAppErrorResponse('Sessão não encontrada'),
+			...standardAuthErrors,
+		},
+	}),
+	async (c) => {
+		const { user } = c.get('session');
+		const { id } = c.req.valid('param');
+		await controller.deleteSession(id, user.id);
+		return c.body(null, 204);
+	},
+);

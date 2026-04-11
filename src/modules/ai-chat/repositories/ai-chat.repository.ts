@@ -68,6 +68,19 @@ export class AiChatRepository {
 			.where(eq(schema.chatSessions.id, id));
 	}
 
+	async updateSessionModelId(id: string, userId: string, aiModelId: string): Promise<void> {
+		await db
+			.update(schema.chatSessions)
+			.set({ aiModelId, updatedAt: new Date() })
+			.where(and(eq(schema.chatSessions.id, id), eq(schema.chatSessions.userId, userId)));
+	}
+
+	async deleteSession(id: string, userId: string): Promise<void> {
+		await db
+			.delete(schema.chatSessions)
+			.where(and(eq(schema.chatSessions.id, id), eq(schema.chatSessions.userId, userId)));
+	}
+
 	async createMessage(data: NewMessage): Promise<Messages> {
 		const [message] = await db.insert(schema.messages).values(data).returning();
 		if (!message) throw new Error('Falha ao criar a mensagem.');

@@ -19,6 +19,7 @@ export const sendMessageBodySchema = z.object({
 		)
 		.optional(),
 	attachments: z.array(attachmentSchema).max(5).optional(),
+	aiModelId: z.string().uuid().optional(),
 });
 
 export type SendMessageDTO = z.infer<typeof sendMessageBodySchema>;

@@ -129,7 +129,8 @@ export class AiChatService {
 		sessionId: string,
 		userId: string,
 		content: string,
-		attachments?: AttachmentMeta[], // Adicionado attachments
+		attachments?: AttachmentMeta[],
+		aiModelId?: string,
 	): Promise<Response> {
 		const session = await this.aiChatRepository.findSessionById(sessionId, userId);
 		if (!session) throw new NotFoundError('Sessão de chat');
@@ -141,22 +142,27 @@ export class AiChatService {
 		const creditsRemaining = await this.usersRepository.getCreditsRemaining(userId);
 		if (creditsRemaining <= 0) throw new PaymentRequiredError('Créditos de IA esgotados');
 
-		const modelRow = session.aiModelId
-			? await this.aiChatRepository.findModelById(session.aiModelId)
+		let finalModelId = session.aiModelId;
+
+		if (aiModelId && aiModelId !== session.aiModelId) {
+			await this.aiChatRepository.updateSessionModelId(sessionId, userId, aiModelId);
+			finalModelId = aiModelId;
+		}
+
+		const modelRow = finalModelId
+			? await this.aiChatRepository.findModelById(finalModelId)
 			: await this.aiChatRepository.findDefaultModel();
 
 		if (!modelRow) throw new NotFoundError('Modelo de IA');
 
-		// Validar suporte a visão se possuir imagens
 		if (attachments?.some((a) => a.type === 'image') && !modelRow.supportsVision) {
 			throw new BadRequestError(`O modelo selecionado (${modelRow.name}) não suporta imagens.`);
 		}
 
-		// Filtrar payload base64 antes de salvar no DB
 		const dbAttachments = attachments?.map((att) => {
 			if (att.base64) {
 				const { base64, ...rest } = att;
-				return rest; // Salva apenas os metadados, despreza o peso do base64 no Postgres
+				return rest;
 			}
 			return att;
 		});
@@ -170,7 +176,6 @@ export class AiChatService {
 
 		const systemPrompt = await this.buildSystemPrompt(session, userId);
 
-		// Recarrega o history, porém o último será anexado artificialmente para ter os base64 na Vercel
 		const historyFromDb = await this.aiChatRepository.findAllMessagesBySession(sessionId);
 
 		const chatMessages: ModelMessage[] = historyFromDb.map((m, index) => {
@@ -220,15 +225,22 @@ export class AiChatService {
 
 		const startTime = Date.now();
 
+		const isToolSupported =
+			modelRow.modelId.startsWith('google/') ||
+			modelRow.modelId.startsWith('openai/') ||
+			modelRow.modelId.startsWith('anthropic/');
+
 		const result = streamText({
-			model: openRouterProvider(modelRow.modelId),
+			model: openRouterProvider.chat(modelRow.modelId),
 			system: systemPrompt,
 			temperature: 0.6,
 			maxOutputTokens: 2048,
 			messages: chatMessages,
-			tools: {
-				webSearch: webSearchTool,
-			},
+			...(isToolSupported && {
+				tools: {
+					webSearch: webSearchTool,
+				},
+			}),
 			onFinish: async (event) => {
 				const durationMs = Date.now() - startTime;
 
@@ -263,7 +275,9 @@ export class AiChatService {
 			},
 		});
 
-		return result.toTextStreamResponse();
+		return result.toTextStreamResponse({
+			headers: { 'X-Error-Handler': 'true' },
+		});
 	}
 
 	async applySuggestion(
@@ -282,11 +296,11 @@ export class AiChatService {
 		}
 
 		if (!session.resumeId) {
-			throw new BadRequestError('Esta sessao nao possui um curriculo associado.');
+			throw new BadRequestError('Esta sessão não possui um currículo associado.');
 		}
 
 		const resume = await this.resumesRepository.findById(session.resumeId, userId);
-		if (!resume) throw new NotFoundError('Resume');
+		if (!resume) throw new NotFoundError('Currículo');
 
 		const currentContent: ResumeContent = {
 			contact: {
@@ -359,6 +373,12 @@ export class AiChatService {
 		const session = await this.aiChatRepository.findSessionById(id, userId);
 		if (!session) throw new NotFoundError('Sessão de chat');
 		await this.aiChatRepository.closeSession(id);
+	}
+
+	async deleteSession(id: string, userId: string): Promise<void> {
+		const session = await this.aiChatRepository.findSessionById(id, userId);
+		if (!session) throw new NotFoundError('Sessão de chat');
+		await this.aiChatRepository.deleteSession(id, userId);
 	}
 
 	private async buildSystemPrompt(session: ChatSessions, userId: string): Promise<string> {
