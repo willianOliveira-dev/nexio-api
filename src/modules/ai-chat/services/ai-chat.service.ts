@@ -1,5 +1,13 @@
-import { type AssistantContent, type ModelMessage, streamText, type UserContent } from 'ai';
+import {
+	type AssistantContent,
+	type ModelMessage,
+	stepCountIs,
+	streamText,
+	type UserContent,
+} from 'ai';
 import { openRouterProvider } from '@/lib/ai/openrouter.provider.js';
+import { listSkillsTool } from '@/lib/ai/tools/list-skills.tool.js';
+import { loadSkillTool } from '@/lib/ai/tools/load-skill.tool.js';
 import { webSearchTool } from '@/lib/ai/tools/web-search.tool.js';
 import type { AttachmentMeta } from '@/lib/db/schemas/chat.schema.js';
 import type { ResumeContent } from '@/lib/db/schemas/resumes.schema.js';
@@ -234,11 +242,14 @@ export class AiChatService {
 			model: openRouterProvider.chat(modelRow.modelId),
 			system: systemPrompt,
 			temperature: 0.6,
+			stopWhen: stepCountIs(5),
 			maxOutputTokens: 2048,
 			messages: chatMessages,
 			...(isToolSupported && {
 				tools: {
 					webSearch: webSearchTool,
+					list_skills: listSkillsTool,
+					load_skill: loadSkillTool,
 				},
 			}),
 			onFinish: async (event) => {
